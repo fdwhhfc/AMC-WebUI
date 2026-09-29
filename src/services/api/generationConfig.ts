@@ -397,10 +397,12 @@ export const appendFunctionDeclarationsToTools = (
   modelId: string,
   generationConfig: GenerationConfig,
   functionDeclarations: FunctionDeclaration[],
+  options: { includeServerSideToolInvocations?: boolean } = {},
 ): GenerationConfig => {
   const supportsBuiltInCustomToolCombination = isGemini3Model(modelId) || isGeminiRoboticsModel(modelId);
   const hasBuiltIns = hasBuiltInTools(generationConfig.tools);
-  const shouldIncludeServerSideToolInvocations = hasBuiltIns && supportsBuiltInCustomToolCombination;
+  const shouldIncludeServerSideToolInvocations =
+    options.includeServerSideToolInvocations !== false && hasBuiltIns && supportsBuiltInCustomToolCombination;
 
   if (functionDeclarations.length === 0) {
     return shouldIncludeServerSideToolInvocations
