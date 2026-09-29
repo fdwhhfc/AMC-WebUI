@@ -91,12 +91,8 @@ export const GeminiProviderDetail: React.FC<GeminiProviderDetailProps> = ({
         settings.useCustomApiConfig && settings.useApiProxy && settings.apiProxyUrl ? settings.apiProxyUrl : null;
 
       const effectiveKey = firstKey || (canUseServerManaged ? SERVER_MANAGED_API_KEY : 'default');
-      const ai = await getClient(
-        effectiveKey,
-        effectiveUrl,
-        undefined,
-        settings.googleApiBackend ?? 'gemini-api',
-      );
+      const backend = settings.useCustomApiConfig ? (settings.googleApiBackend ?? 'gemini-api') : 'gemini-api';
+      const ai = await getClient(effectiveKey, effectiveUrl, undefined, backend);
       await ai.models.generateContent({
         model: modelId,
         contents: 'Hello',
