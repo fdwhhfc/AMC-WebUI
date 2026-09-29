@@ -10,10 +10,7 @@ import {
   getNormalizedUpstreamBaseUrl,
   toAbsoluteHttpUrl,
 } from './geminiApiBaseUrl';
-import {
-  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
-  normalizeGeminiApiBaseUrl,
-} from '@/utils/api/apiProxyUrl';
+import { DEFAULT_VERTEX_EXPRESS_API_BASE_URL, normalizeGeminiApiBaseUrl } from '@/utils/api/apiProxyUrl';
 import { hasDeploymentApiContainer } from '@/runtime/runtimeConfig';
 import { type GeminiClientHttpOptions, withHttpOptionHeaders } from './geminiApiVersion';
 import type { InternalGeminiApiClient } from './geminiResumableUpload';
@@ -147,9 +144,7 @@ export const getConfiguredApiClient = async (
             ? getNormalizedUpstreamBaseUrl(settings)
             : null;
           const vertexExpressUpstream =
-            backend === 'vertex-express' && hasDeploymentApiContainer()
-              ? DEFAULT_VERTEX_EXPRESS_API_BASE_URL
-              : null;
+            backend === 'vertex-express' && hasDeploymentApiContainer() ? DEFAULT_VERTEX_EXPRESS_API_BASE_URL : null;
           const upstreamUrl = configuredUpstream ?? vertexExpressUpstream;
           return upstreamUrl ? { 'x-gemini-upstream-base-url': upstreamUrl } : undefined;
         })()

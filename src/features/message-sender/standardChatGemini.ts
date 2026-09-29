@@ -164,8 +164,7 @@ export const executeGeminiChat = async ({
     imageOutputMode,
   });
 
-  const isVertexExpress =
-    appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+  const isVertexExpress = appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
   const requestConfig = appendFunctionDeclarationsToTools(
     apiModelId,
     config,

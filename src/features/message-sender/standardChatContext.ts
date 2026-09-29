@@ -111,8 +111,7 @@ export const prepareStandardChatContext = async ({
     sessionToUpdate.hideThinkingInContext ?? appSettings.hideThinkingInContext,
     alwaysKeepThinking,
   );
-  const isVertexExpress =
-    appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+  const isVertexExpress = appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
   const historyForChat = await createChatHistoryForApi(
     baseMessagesForApi,
     shouldStripThinking,

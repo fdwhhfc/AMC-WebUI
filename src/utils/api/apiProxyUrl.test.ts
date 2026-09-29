@@ -53,7 +53,9 @@ describe('apiProxyUrl', () => {
         'generateContent',
         'vertex-express',
       );
-      expect(url).toBe('https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent');
+      expect(url).toBe(
+        'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent',
+      );
     });
   });
 

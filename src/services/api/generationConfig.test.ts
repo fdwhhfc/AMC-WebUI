@@ -885,12 +885,9 @@ describe('appendFunctionDeclarationsToTools', () => {
   });
 
   it('omits server-side tool invocation circulation when disabled', () => {
-    const config = appendFunctionDeclarationsToTools(
-      'gemini-3-flash-preview',
-      { tools: [{ googleSearch: {} }] },
-      [],
-      { includeServerSideToolInvocations: false },
-    );
+    const config = appendFunctionDeclarationsToTools('gemini-3-flash-preview', { tools: [{ googleSearch: {} }] }, [], {
+      includeServerSideToolInvocations: false,
+    });
 
     expect(config.tools).toEqual([{ googleSearch: {} }]);
     expect(config.toolConfig).toBeUndefined();

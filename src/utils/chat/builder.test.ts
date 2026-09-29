@@ -389,14 +389,7 @@ describe('createChatHistoryForApi', () => {
       }),
     ];
 
-    const history = await createChatHistoryForApi(
-      msgs,
-      false,
-      'gemini-3.5-flash',
-      false,
-      false,
-      true,
-    );
+    const history = await createChatHistoryForApi(msgs, false, 'gemini-3.5-flash', false, false, true);
 
     expect(history[0].parts[0]).toEqual({
       inlineData: {

@@ -333,7 +333,8 @@ export const createChatHistoryForApi = async (
                     try {
                       return {
                         inlineData: {
-                          mimeType: mimeType || sourceFile.type || sourceFile.rawFile.type || 'application/octet-stream',
+                          mimeType:
+                            mimeType || sourceFile.type || sourceFile.rawFile.type || 'application/octet-stream',
                           data: await blobToBase64(sourceFile.rawFile),
                         },
                         ...(partCopy.mediaResolution ? { mediaResolution: partCopy.mediaResolution } : {}),
