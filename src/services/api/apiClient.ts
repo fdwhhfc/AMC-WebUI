@@ -131,7 +131,10 @@ export const getConfiguredApiClient = async (
 ): Promise<GoogleGenAI> => {
   const { settings, apiProxyUrl } = await loadConfiguredApiRouting();
 
-  const backend = routingOverrides?.backend ?? settings?.googleApiBackend ?? DEFAULT_GOOGLE_API_BACKEND;
+  const backend =
+    routingOverrides?.backend ??
+    (settings?.useCustomApiConfig ? settings.googleApiBackend : undefined) ??
+    DEFAULT_GOOGLE_API_BACKEND;
   const effectiveApiProxyUrl = routingOverrides?.directGoogleApi ? null : apiProxyUrl;
 
   // Docker mode: when the user configured an absolute upstream proxy URL, the
