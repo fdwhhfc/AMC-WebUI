@@ -5,11 +5,16 @@ import { ApiProxySettings } from './ApiProxySettings';
 
 describe('ApiProxySettings', () => {
   const renderer = setupTestRenderer();
+  const backendProps = {
+    googleApiBackend: 'gemini-api' as const,
+    setGoogleApiBackend: vi.fn(),
+  };
 
   it('renders the SDK request preview for a custom proxy URL', () => {
     act(() => {
       renderer.root.render(
         <ApiProxySettings
+          {...backendProps}
           useApiProxy
           setUseApiProxy={vi.fn()}
           apiProxyUrl="https://proxy.example.com/gemini/v1beta"
@@ -27,6 +32,7 @@ describe('ApiProxySettings', () => {
     act(() => {
       renderer.root.render(
         <ApiProxySettings
+          {...backendProps}
           useApiProxy={false}
           setUseApiProxy={vi.fn()}
           apiProxyUrl="http://localhost:7860/v1beta"
@@ -44,7 +50,13 @@ describe('ApiProxySettings', () => {
   it('does not render built-in proxy badge or hint when proxy is empty, and hides reset button', () => {
     act(() => {
       renderer.root.render(
-        <ApiProxySettings useApiProxy setUseApiProxy={vi.fn()} apiProxyUrl={null} setApiProxyUrl={vi.fn()} />,
+        <ApiProxySettings
+          {...backendProps}
+          useApiProxy
+          setUseApiProxy={vi.fn()}
+          apiProxyUrl={null}
+          setApiProxyUrl={vi.fn()}
+        />,
       );
     });
 
@@ -61,6 +73,7 @@ describe('ApiProxySettings', () => {
     act(() => {
       renderer.root.render(
         <ApiProxySettings
+          {...backendProps}
           useApiProxy
           setUseApiProxy={vi.fn()}
           apiProxyUrl="https://custom.proxy.com"
