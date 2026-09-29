@@ -1001,6 +1001,7 @@ describe('standardChatStrategy', () => {
       'gemini-3-flash-preview',
       false,
       false,
+      false,
     );
     expect(mockSendMessageNonStream).toHaveBeenCalledWith(
       'api-key',
