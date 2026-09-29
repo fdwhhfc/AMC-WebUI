@@ -5,9 +5,11 @@ import { dbService } from '@/services/db/dbService';
 
 type MockGoogleGenAIConfig = {
   apiKey: string;
+  vertexai?: boolean;
   httpOptions?: {
-    apiVersion?: 'v1alpha';
+    apiVersion?: string;
     baseUrl?: string;
+    headers?: Record<string, string>;
   };
 };
 
@@ -75,6 +77,15 @@ describe('getClient', () => {
     });
   });
 
+  it('creates a Vertex Express client with Vertex routing and stable v1', async () => {
+    await getClient('vertex-key', null, undefined, 'vertex-express');
+    expect(GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'vertex-key',
+      vertexai: true,
+      httpOptions: { apiVersion: 'v1' },
+    });
+  });
+
   it('throws on invalid initialization', async () => {
     vi.mocked(GoogleGenAI).mockImplementationOnce(() => {
       throw new Error('bad');
@@ -102,6 +113,24 @@ describe('getConfiguredApiClient', () => {
         httpOptions: { baseUrl: 'https://proxy.example.com' },
       }),
     );
+  });
+
+  it('uses Vertex Express backend selected in settings', async () => {
+    vi.mocked(dbService.getAppSettings).mockResolvedValue({
+      useCustomApiConfig: true,
+      useApiProxy: true,
+      apiProxyUrl: 'https://aiplatform.googleapis.com',
+      googleApiBackend: 'vertex-express',
+    } as StoredAppSettings);
+    await getConfiguredApiClient('vertex-key');
+    expect(GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'vertex-key',
+      vertexai: true,
+      httpOptions: {
+        apiVersion: 'v1',
+        baseUrl: 'https://aiplatform.googleapis.com',
+      },
+    });
   });
 
   it('skips proxy when useApiProxy is false', async () => {
@@ -141,6 +170,22 @@ describe('getConfiguredApiClient', () => {
 describe('getConfiguredApiClientContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('keeps the upload context on Gemini API even when Vertex Express is selected', async () => {
+    vi.mocked(dbService.getAppSettings).mockResolvedValue({
+      useCustomApiConfig: true,
+      useApiProxy: true,
+      apiProxyUrl: 'https://proxy.example.com/gemini/v1beta/',
+      googleApiBackend: 'vertex-express',
+    } as StoredAppSettings);
+
+    await getConfiguredApiClientContext('key');
+
+    expect(GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'key',
+      httpOptions: { baseUrl: 'https://proxy.example.com/gemini' },
+    });
   });
 
   it('builds the client and routing URLs from one settings read', async () => {
