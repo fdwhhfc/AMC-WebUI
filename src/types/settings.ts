@@ -91,6 +91,7 @@ export enum MediaResolution {
 
 export type ImageOutputMode = 'IMAGE_TEXT' | 'IMAGE_ONLY';
 export type ApiMode = 'gemini-native' | 'third-party';
+export type GoogleApiBackend = 'gemini-api' | 'vertex-express';
 export type AutoTitleLength = 'concise' | 'standard' | 'detailed';
 
 /** The built-in Gemini provider id used in session routing. */
@@ -318,6 +319,8 @@ export interface AppSettings extends ChatSettings {
   baseFontSize: number;
   readingFontFamily?: ReadingFontFamily;
   useCustomApiConfig: boolean;
+  /** Google GenAI transport backend for normal model generation. Files/Live stay on Gemini API. */
+  googleApiBackend?: GoogleApiBackend;
   serverManagedApi?: boolean;
   serverAccessPassword?: string | null;
   apiKey: string | null;
