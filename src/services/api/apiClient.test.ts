@@ -133,6 +133,17 @@ describe('getConfiguredApiClient', () => {
     });
   });
 
+  it('ignores persisted Vertex backend when custom API config is disabled', async () => {
+    vi.mocked(dbService.getAppSettings).mockResolvedValue({
+      useCustomApiConfig: false,
+      useApiProxy: false,
+      apiProxyUrl: null,
+      googleApiBackend: 'vertex-express',
+    } as StoredAppSettings);
+    await getConfiguredApiClient('key');
+    expect(GoogleGenAI).toHaveBeenCalledWith({ apiKey: 'key' });
+  });
+
   it('skips proxy when useApiProxy is false', async () => {
     vi.mocked(dbService.getAppSettings).mockResolvedValue({
       useCustomApiConfig: true,
