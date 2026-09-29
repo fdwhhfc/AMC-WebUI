@@ -345,9 +345,10 @@ export const createChatHistoryForApi = async (
                     }
                   }
 
-                  if (sourceFile?.dataUrl?.startsWith('blob:') || sourceFile?.dataUrl?.startsWith('data:')) {
+                  const previewUrl = sourceFile?.dataUrl;
+                  if (previewUrl && (previewUrl.startsWith('blob:') || previewUrl.startsWith('data:'))) {
                     try {
-                      const response = await fetch(sourceFile.dataUrl);
+                      const response = await fetch(previewUrl);
                       const blob = await response.blob();
                       return {
                         inlineData: {
