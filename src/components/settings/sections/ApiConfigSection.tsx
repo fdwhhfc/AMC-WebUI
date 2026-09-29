@@ -172,7 +172,7 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
 
     const startTime = performance.now();
     try {
-      const ai = await getClient(firstKey, effectiveUrl);
+      const ai = await getClient(firstKey, effectiveUrl, undefined, settings.googleApiBackend ?? 'gemini-api');
 
       await ai.models.generateContent({
         model: testModelId || DEFAULT_LIVE_ARTIFACTS_MODEL_ID,
@@ -226,6 +226,11 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
             />
 
             <ApiProxySettings
+              googleApiBackend={settings.googleApiBackend ?? 'gemini-api'}
+              setGoogleApiBackend={(nextBackend) => {
+                onUpdate('googleApiBackend', nextBackend);
+                setGeminiTestResult(null);
+              }}
               useApiProxy={useApiProxy}
               setUseApiProxy={(nextUseApiProxy) => {
                 setUseApiProxy(nextUseApiProxy);
