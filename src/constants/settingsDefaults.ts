@@ -93,6 +93,7 @@ const BASE_DEFAULT_APP_SETTINGS: Omit<AppSettings, 'thirdPartyApi'> = {
   baseFontSize: DEFAULT_BASE_FONT_SIZE,
   readingFontFamily: DEFAULT_READING_FONT_FAMILY,
   useCustomApiConfig: false,
+  googleApiBackend: 'gemini-api',
   serverManagedApi: false,
   serverAccessPassword: null,
   apiKey: null,
