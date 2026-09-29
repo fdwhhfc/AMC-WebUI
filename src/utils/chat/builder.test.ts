@@ -365,6 +365,47 @@ describe('createChatHistoryForApi', () => {
     expect(textPart?.text).toContain('world');
   });
 
+  it('rehydrates Gemini Files references as inlineData for Vertex Express history', async () => {
+    const msgs = [
+      makeMessage('user', '', {
+        files: [
+          makeFile({
+            name: 'clip.mp4',
+            type: 'video/mp4',
+            fileUri: 'files/vertex-history',
+            fileApiName: 'files/vertex-history',
+            rawFile: new Blob(['video'], { type: 'video/mp4' }),
+            transferStrategy: 'files-api',
+          }),
+        ],
+        apiParts: [
+          {
+            fileData: {
+              mimeType: 'video/mp4',
+              fileUri: 'files/vertex-history',
+            },
+          },
+        ],
+      }),
+    ];
+
+    const history = await createChatHistoryForApi(
+      msgs,
+      false,
+      'gemini-3.5-flash',
+      false,
+      false,
+      true,
+    );
+
+    expect(history[0].parts[0]).toEqual({
+      inlineData: {
+        mimeType: 'video/mp4',
+        data: 'base64data',
+      },
+    });
+  });
+
   it('handles apiParts for model messages with inlineData', async () => {
     const msgs = [
       makeMessage('model', '', {
