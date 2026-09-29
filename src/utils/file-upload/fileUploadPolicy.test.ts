@@ -90,6 +90,29 @@ describe('third-party sessions never use the Gemini Files API', () => {
   });
 });
 
+describe('Vertex Express sessions use native inline attachments', () => {
+  const settings = makeSettings({
+    useCustomApiConfig: true,
+    googleApiBackend: 'vertex-express',
+    filesApiConfig: { images: true, pdfs: true, audio: true, video: true, text: true },
+  });
+
+  it('does not use Gemini Files API for audio or video even when Files API is preferred', () => {
+    expect(shouldUseFileApi(createFile('clip.mp4', 'video/mp4', 1024), settings)).toBe(false);
+    expect(shouldUseFileApi(createFile('voice.mp3', 'audio/mpeg', 1024), settings)).toBe(false);
+  });
+
+  it('does not promote oversized Vertex Express batches to Gemini Files API', () => {
+    const files = [
+      createFile('clip.mp4', 'video/mp4', 101 * 1024 * 1024),
+      createFile('paper.pdf', 'application/pdf', 51 * 1024 * 1024),
+    ];
+
+    expect(getFilesRequiringFileApi(files, settings).size).toBe(0);
+    expect(checkBatchNeedsApiKey(files, settings)).toBe(false);
+  });
+});
+
 describe('file upload strategy limits', () => {
   it('preserves specific text MIME types for structured text files', () => {
     const file = createFile('dataset.csv', 'text/csv', 1024);
