@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import * as apiProxyUrlModule from './apiProxyUrl';
 
-const { buildGeminiRequestPreviewUrl, DEFAULT_GEMINI_API_BASE_URL, normalizeGeminiApiBaseUrl, trimTrailingSlashes } =
-  apiProxyUrlModule;
+const {
+  buildGeminiRequestPreviewUrl,
+  buildGoogleRequestPreviewUrl,
+  DEFAULT_GEMINI_API_BASE_URL,
+  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+  normalizeGeminiApiBaseUrl,
+  trimTrailingSlashes,
+} = apiProxyUrlModule;
 
 describe('apiProxyUrl', () => {
   describe('trimTrailingSlashes', () => {
@@ -36,6 +42,18 @@ describe('apiProxyUrl', () => {
     it('builds standard request preview url', () => {
       const url = buildGeminiRequestPreviewUrl(DEFAULT_GEMINI_API_BASE_URL, 'gemini-2.5-flash', 'generateContent');
       expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    });
+  });
+
+  describe('buildGoogleRequestPreviewUrl', () => {
+    it('builds the Vertex Express publisher model path', () => {
+      const url = buildGoogleRequestPreviewUrl(
+        DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+        'gemini-2.5-flash',
+        'generateContent',
+        'vertex-express',
+      );
+      expect(url).toBe('https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent');
     });
   });
 
