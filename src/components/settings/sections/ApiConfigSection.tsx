@@ -172,7 +172,8 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
 
     const startTime = performance.now();
     try {
-      const ai = await getClient(firstKey, effectiveUrl, undefined, settings.googleApiBackend ?? 'gemini-api');
+      const backend = useCustomApiConfig ? (settings.googleApiBackend ?? 'gemini-api') : 'gemini-api';
+      const ai = await getClient(firstKey, effectiveUrl, undefined, backend);
 
       await ai.models.generateContent({
         model: testModelId || DEFAULT_LIVE_ARTIFACTS_MODEL_ID,
