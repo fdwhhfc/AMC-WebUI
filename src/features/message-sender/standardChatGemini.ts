@@ -164,10 +164,21 @@ export const executeGeminiChat = async ({
     imageOutputMode,
   });
 
-  const requestConfig = appendFunctionDeclarationsToTools(apiModelId, config, [
-    ...(isLocalPythonEnabledForTurn ? localPythonFunctionDeclarations : []),
-    ...(mcpFunctionDeclarations as Parameters<typeof appendFunctionDeclarationsToTools>[2]),
-  ]);
+  const isVertexExpress =
+    appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+  const requestConfig = appendFunctionDeclarationsToTools(
+    apiModelId,
+    config,
+    [
+      ...(isLocalPythonEnabledForTurn ? localPythonFunctionDeclarations : []),
+      ...(mcpFunctionDeclarations as Parameters<typeof appendFunctionDeclarationsToTools>[2]),
+    ],
+    {
+      // This field is specific to the Gemini Developer API and is rejected by
+      // Vertex AI / Vertex Express.
+      includeServerSideToolInvocations: !isVertexExpress,
+    },
+  );
   const hasFunctionDeclarationsInRequest = !!requestConfig.tools?.some((tool) => 'functionDeclarations' in tool);
 
   const canJournalStream = isGeminiProxyRelativePath(appSettings) && finalRole === 'user' && !isContinueMode;
