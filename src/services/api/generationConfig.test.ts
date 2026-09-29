@@ -884,6 +884,18 @@ describe('appendFunctionDeclarationsToTools', () => {
     });
   });
 
+  it('omits server-side tool invocation circulation when disabled', () => {
+    const config = appendFunctionDeclarationsToTools(
+      'gemini-3-flash-preview',
+      { tools: [{ googleSearch: {} }] },
+      [],
+      { includeServerSideToolInvocations: false },
+    );
+
+    expect(config.tools).toEqual([{ googleSearch: {} }]);
+    expect(config.toolConfig).toBeUndefined();
+  });
+
   it('keeps custom function declarations alongside built-in tools for Gemini 3 models', () => {
     const config = appendFunctionDeclarationsToTools('gemini-3-flash-preview', { tools: [{ googleSearch: {} }] }, [
       {
