@@ -126,12 +126,16 @@ export const getUploadLifecycleForGeminiState = (
 const isThirdPartyRoute = (providerId?: ChatProviderId): boolean =>
   providerId !== undefined && providerId !== GEMINI_PROVIDER_ID;
 
+const isVertexExpressRoute = (appSettings: AppSettings): boolean =>
+  appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+
 export const shouldUseFileApi = (file: File, appSettings: AppSettings, providerId?: ChatProviderId): boolean => {
   const effectiveMimeType = getEffectiveMimeType(file);
   if (!SUPPORTED_UPLOAD_MIME_TYPES.includes(effectiveMimeType)) return false;
 
-  // Third-party providers cannot consume Gemini Files API references; always inline.
-  if (isThirdPartyRoute(providerId)) return false;
+  // Third-party providers and Vertex Express cannot consume Gemini Files API
+  // references. Vertex Express accepts native multimodal inlineData instead.
+  if (isThirdPartyRoute(providerId) || isVertexExpressRoute(appSettings)) return false;
 
   const isServerCodeExecutionEnabled = isServerCodeExecutionMode(appSettings);
   const isTextLike = isTextFile(file);
@@ -162,8 +166,8 @@ export const getFilesRequiringFileApi = (
 ): Set<File> => {
   const filesRequiringApi = new Set<File>();
 
-  // Third-party providers cannot consume Gemini Files API references; always inline.
-  if (isThirdPartyRoute(providerId)) return filesRequiringApi;
+  // Third-party providers and Vertex Express never use the Gemini Files API.
+  if (isThirdPartyRoute(providerId) || isVertexExpressRoute(appSettings)) return filesRequiringApi;
 
   const inlineCandidates: File[] = [];
   let inlinePayloadBytes = 0;
