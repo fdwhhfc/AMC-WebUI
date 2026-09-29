@@ -111,12 +111,15 @@ export const prepareStandardChatContext = async ({
     sessionToUpdate.hideThinkingInContext ?? appSettings.hideThinkingInContext,
     alwaysKeepThinking,
   );
+  const isVertexExpress =
+    appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
   const historyForChat = await createChatHistoryForApi(
     baseMessagesForApi,
     shouldStripThinking,
     apiModelId,
     isServerCodeExecutionMode(sessionToUpdate),
     alwaysKeepThinking,
+    isVertexExpress,
   );
 
   // Media Locate Protocols: augment the system instruction when preset is enabled and matching media is present
