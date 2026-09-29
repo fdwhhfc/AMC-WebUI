@@ -355,7 +355,8 @@ export const runStandardToolLoop = async ({
           ...turn.modelContent,
           parts: turn.modelContent.parts.map((part) => {
             if (!part.functionCall?.id) return part;
-            const { id: _id, ...functionCall } = part.functionCall;
+            const functionCall = { ...part.functionCall };
+            delete functionCall.id;
             return { ...part, functionCall };
           }),
         }
