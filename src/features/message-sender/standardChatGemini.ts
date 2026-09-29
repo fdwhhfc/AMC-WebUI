@@ -351,6 +351,7 @@ export const executeGeminiChat = async ({
               apiModelId,
               isServerCodeExecutionMode(sessionToUpdate),
               alwaysKeepThinking,
+              isVertexExpress,
             );
 
             if (hasFunctionDeclarationsInRequest) {
@@ -359,6 +360,7 @@ export const executeGeminiChat = async ({
                   initialContents: appendTurnToHistory(retryHistoryForChat, finalRole, retryFinalParts),
                   clientFunctions: combinedClientFunctions,
                   abortSignal: newAbortController.signal,
+                  omitFunctionCallIdsFromWire: isVertexExpress,
                   onToolCallsStarted: (modelContent) => {
                     insertInternalToolMessages([
                       createMessage('model', '', {
@@ -454,6 +456,7 @@ export const executeGeminiChat = async ({
         initialContents: appendTurnToHistory(historyForChat, finalRole, finalParts),
         clientFunctions: combinedClientFunctions,
         abortSignal: newAbortController.signal,
+        omitFunctionCallIdsFromWire: isVertexExpress,
         onToolCallsStarted: (modelContent) => {
           insertInternalToolMessages([
             createMessage('model', '', {
