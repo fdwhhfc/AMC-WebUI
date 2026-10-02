@@ -329,6 +329,16 @@ export const createChatHistoryForApi = async (
                         (!!mimeType && file.type === mimeType),
                     ) ?? undefined;
 
+                  const remoteReferenceExpired =
+                    sourceFile?.transferStrategy === 'remote-file-id' &&
+                    sourceFile.fileApiExpirationTime &&
+                    Date.parse(sourceFile.fileApiExpirationTime) <= Date.now();
+                  if (remoteReferenceExpired) {
+                    return {
+                      text: formatHistoryFileApiUnavailablePartText(sourceFile?.name || 'attachment'),
+                    };
+                  }
+
                   if (sourceFile?.rawFile instanceof Blob) {
                     try {
                       return {
