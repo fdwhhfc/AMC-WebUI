@@ -1,4 +1,9 @@
 import type { AppSettings, UploadedFile } from '@/types';
+import {
+  getApiKeyFingerprint,
+  toFileApiExpirationTime,
+} from '@/utils/chat/geminiFilesApi';
+import { getUploadLifecycleForGeminiState } from '@/utils/file-upload/fileUploadPolicy';
 
 const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const GOOGLE_API_SCRIPT_SRC = 'https://apis.google.com/js/api.js';
@@ -387,6 +392,61 @@ interface GoogleDriveCloudTicket {
   error?: string;
 }
 
+interface GoogleDriveGeminiUploadResponse {
+  file?: {
+    name?: string;
+    uri?: string;
+    displayName?: string;
+    mimeType?: string;
+    sizeBytes?: string | number;
+    state?: string;
+    expirationTime?: string;
+    error?: {
+      message?: string;
+    };
+  };
+  error?: string;
+}
+
+export const uploadGoogleDriveFileToGemini = async (
+  fileId: string,
+  accessToken: string,
+  geminiApiKey: string,
+): Promise<UploadedFile> => {
+  const response = await fetch('/api/drive/gemini-upload', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-amc-drive-access-token': accessToken,
+      'x-amc-gemini-api-key': geminiApiKey,
+    },
+    body: JSON.stringify({ fileId }),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as GoogleDriveGeminiUploadResponse;
+  const file = result.file;
+  if (!response.ok || !file?.name || !file.uri) {
+    throw new Error(result.error || `Google Drive → Gemini Files API upload failed (${response.status}).`);
+  }
+
+  const lifecycle = getUploadLifecycleForGeminiState(file.state);
+  return {
+    id: `drive-gemini-${crypto.randomUUID()}`,
+    name: file.displayName || file.name,
+    type: file.mimeType || 'application/octet-stream',
+    size: Number(file.sizeBytes || 0),
+    fileUri: file.uri,
+    fileApiName: file.name,
+    fileApiExpirationTime: toFileApiExpirationTime(file.expirationTime),
+    fileApiKeyFingerprint: getApiKeyFingerprint(geminiApiKey),
+    transferStrategy: 'files-api',
+    uploadState: lifecycle.uploadState,
+    isProcessing: lifecycle.isProcessing,
+    progress: 100,
+    error: lifecycle.uploadState === 'failed' ? file.error?.message || 'Gemini Files API processing failed.' : undefined,
+  };
+};
+
 export const createGoogleDriveCloudReference = async (fileId: string, accessToken: string): Promise<UploadedFile> => {
   const response = await fetch('/api/drive/ticket', {
     method: 'POST',
@@ -430,6 +490,7 @@ const getPickerSession = async (settings: AppSettings): Promise<{ accessToken: s
 
 export const pickGoogleDriveAttachments = async (
   settings: AppSettings,
+  options: { geminiApiKey?: string } = {},
 ): Promise<{ localFiles: File[]; remoteFiles: UploadedFile[] }> => {
   const { accessToken, fileIds } = await getPickerSession(settings);
   const isVertexExpress = settings.useCustomApiConfig && settings.googleApiBackend === 'vertex-express';
@@ -438,6 +499,14 @@ export const pickGoogleDriveAttachments = async (
     const remoteFiles: UploadedFile[] = [];
     for (const fileId of fileIds) {
       remoteFiles.push(await createGoogleDriveCloudReference(fileId, accessToken));
+    }
+    return { localFiles: [], remoteFiles };
+  }
+
+  if (options.geminiApiKey) {
+    const remoteFiles: UploadedFile[] = [];
+    for (const fileId of fileIds) {
+      remoteFiles.push(await uploadGoogleDriveFileToGemini(fileId, accessToken, options.geminiApiKey));
     }
     return { localFiles: [], remoteFiles };
   }
