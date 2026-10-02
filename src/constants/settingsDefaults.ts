@@ -149,6 +149,9 @@ const BASE_DEFAULT_APP_SETTINGS: Omit<AppSettings, 'thirdPartyApi'> = {
   tokenCalculatorApiKey: null,
   liveApiKey: null,
   embeddingApiKey: null,
+  googleDriveClientId: null,
+  googleDriveApiKey: null,
+  googleDriveAppId: null,
 };
 
 export function getDefaultAppSettings(): AppSettings {
