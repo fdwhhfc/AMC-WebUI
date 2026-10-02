@@ -1,12 +1,26 @@
 {
   "workspaces": {
     ".": {
-      "entry": ["server/src/index.ts"]
+      "entry": [
+        "server/src/index.ts"
+      ]
     }
   },
-  "ignore": ["docker/web-server.js", "public/runtime-config.js", "e2e/fixtures/mcp-test-server.mjs"],
-  "ignoreDependencies": ["pyodide", "lamejs", "@iconify-json/material-icon-theme", "cookie"],
-  "ignoreBinaries": ["wrangler"],
+  "ignore": [
+    "docker/web-server.js",
+    "public/runtime-config.js",
+    "e2e/fixtures/mcp-test-server.mjs",
+    "functions/api/drive/*.js"
+  ],
+  "ignoreDependencies": [
+    "pyodide",
+    "lamejs",
+    "@iconify-json/material-icon-theme",
+    "cookie"
+  ],
+  "ignoreBinaries": [
+    "wrangler"
+  ],
   "ignoreExportsUsedInFile": {
     "interface": true,
     "type": true
@@ -15,34 +29,101 @@
     "duplicates": "off"
   },
   "ignoreIssues": {
-    "src/components/shared/AlertDialog.tsx": ["exports"],
-    "src/components/shared/ContextMenu.tsx": ["exports"],
-    "src/components/shared/Dialog.tsx": ["exports"],
-    "src/components/shared/DropdownMenu.tsx": ["exports"],
-    "src/components/shared/Popover.tsx": ["exports"],
-    "src/components/shared/ModelIcon.tsx": ["exports"],
-    "src/components/chat/width/chatWidthState.ts": ["exports"],
-    "src/components/message/blocks/LiveUi*": ["exports", "types"],
-    "src/components/message/blocks/parts/LiveUi*": ["exports", "types"],
-    "src/components/settings/sections/appearance/LiveUi*": ["exports", "types"],
-    "src/components/settings/sections/LiveUiSection.tsx": ["exports", "types"],
-    "src/features/local-python/loadPyodideService.ts": ["exports"],
-    "src/features/message-sender/**": ["exports"],
-    "src/features/prompts/promptCompositor.ts": ["exports"],
-    "src/features/prompts/promptRegistry.ts": ["exports"],
-    "src/features/standard-chat/standardClientFunctions.ts": ["exports"],
-    "src/hooks/app/useLiveUiPromptMode.ts": ["exports", "types"],
-    "src/hooks/chat/history/sessionInitialLoad.ts": ["exports", "types"],
-    "src/hooks/data-management/ChatExportRenderer.tsx": ["exports"],
-    "src/hooks/live-api/useLiveTranslateConfig.ts": ["exports"],
-    "src/i18n/coreTranslations.ts": ["exports"],
-    "src/i18n/voiceStyleTranslations.ts": ["exports"],
-    "src/services/logUsageTracker.ts": ["exports"],
-    "src/stores/syncedPersist.ts": ["types"],
-    "src/utils/export/**": ["exports"],
-    "src/utils/live-ui/**": ["exports", "types"],
-    "src/utils/markdown/**": ["exports", "types"],
-    "src/utils/text-selection/liveUiSelection.ts": ["exports", "types"],
-    "vite/staticAssets.ts": ["exports"]
+    "src/components/shared/AlertDialog.tsx": [
+      "exports"
+    ],
+    "src/components/shared/ContextMenu.tsx": [
+      "exports"
+    ],
+    "src/components/shared/Dialog.tsx": [
+      "exports"
+    ],
+    "src/components/shared/DropdownMenu.tsx": [
+      "exports"
+    ],
+    "src/components/shared/Popover.tsx": [
+      "exports"
+    ],
+    "src/components/shared/ModelIcon.tsx": [
+      "exports"
+    ],
+    "src/components/chat/width/chatWidthState.ts": [
+      "exports"
+    ],
+    "src/components/message/blocks/LiveUi*": [
+      "exports",
+      "types"
+    ],
+    "src/components/message/blocks/parts/LiveUi*": [
+      "exports",
+      "types"
+    ],
+    "src/components/settings/sections/appearance/LiveUi*": [
+      "exports",
+      "types"
+    ],
+    "src/components/settings/sections/LiveUiSection.tsx": [
+      "exports",
+      "types"
+    ],
+    "src/features/local-python/loadPyodideService.ts": [
+      "exports"
+    ],
+    "src/features/message-sender/**": [
+      "exports"
+    ],
+    "src/features/prompts/promptCompositor.ts": [
+      "exports"
+    ],
+    "src/features/prompts/promptRegistry.ts": [
+      "exports"
+    ],
+    "src/features/standard-chat/standardClientFunctions.ts": [
+      "exports"
+    ],
+    "src/hooks/app/useLiveUiPromptMode.ts": [
+      "exports",
+      "types"
+    ],
+    "src/hooks/chat/history/sessionInitialLoad.ts": [
+      "exports",
+      "types"
+    ],
+    "src/hooks/data-management/ChatExportRenderer.tsx": [
+      "exports"
+    ],
+    "src/hooks/live-api/useLiveTranslateConfig.ts": [
+      "exports"
+    ],
+    "src/i18n/coreTranslations.ts": [
+      "exports"
+    ],
+    "src/i18n/voiceStyleTranslations.ts": [
+      "exports"
+    ],
+    "src/services/logUsageTracker.ts": [
+      "exports"
+    ],
+    "src/stores/syncedPersist.ts": [
+      "types"
+    ],
+    "src/utils/export/**": [
+      "exports"
+    ],
+    "src/utils/live-ui/**": [
+      "exports",
+      "types"
+    ],
+    "src/utils/markdown/**": [
+      "exports",
+      "types"
+    ],
+    "src/utils/text-selection/liveUiSelection.ts": [
+      "exports",
+      "types"
+    ],
+    "vite/staticAssets.ts": [
+      "exports"
+    ]
   }
 }
