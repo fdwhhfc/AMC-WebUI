@@ -50,6 +50,11 @@ describe('useChatInputFile', () => {
       const cameraInputRef = React.useRef<HTMLInputElement>(null);
       const result = useChatInputFile({
         appSettings: DEFAULT_APP_SETTINGS,
+        currentChatSettings: {
+          ...DEFAULT_APP_SETTINGS,
+          lockedApiKey: null,
+        },
+        setCurrentChatSettings: vi.fn(),
         fileIdInput: ' files/example ',
         isAddingById: false,
         setAddingById,
