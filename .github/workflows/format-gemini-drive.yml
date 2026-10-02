@@ -1,0 +1,32 @@
+name: Format Gemini Drive cloud upload
+
+on:
+  push:
+    branches:
+      - feature/vertex-express
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/vertex-express
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write functions/api/drive/gemini-upload.js src/services/googleDrive/googleDrivePicker.ts src/services/googleDrive/googleDrivePicker.test.ts src/hooks/chat-input/useChatInputFileUi.ts src/hooks/chat-input/useChatInputFile.ts src/hooks/chat-input/useChatInput.ts src/hooks/chat-input/useChatInputFile.test.tsx
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add functions/api/drive/gemini-upload.js src/services/googleDrive/googleDrivePicker.ts src/services/googleDrive/googleDrivePicker.test.ts src/hooks/chat-input/useChatInputFileUi.ts src/hooks/chat-input/useChatInputFile.ts src/hooks/chat-input/useChatInput.ts src/hooks/chat-input/useChatInputFile.test.tsx
+          git diff --cached --quiet || git commit -m "chore: format Gemini Drive cloud upload"
+          git push
