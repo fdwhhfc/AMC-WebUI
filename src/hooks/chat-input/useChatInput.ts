@@ -60,6 +60,8 @@ export const useChatInput = () => {
     handleSaveFileConfig,
   } = useChatInputFile({
     appSettings,
+    currentChatSettings,
+    setCurrentChatSettings,
     fileIdInput: inputState.fileIdInput,
     isAddingById: inputState.isAddingById,
     setAddingById: inputState.setAddingById,
