@@ -815,6 +815,7 @@ describe('standardChatStrategy', () => {
       'gemini-3-pro-image-preview',
       expect.any(Object),
       [],
+      { includeServerSideToolInvocations: true },
     );
 
     unmount();
@@ -1000,6 +1001,7 @@ describe('standardChatStrategy', () => {
       'gemini-3-flash-preview',
       false,
       false,
+      false,
     );
     expect(mockSendMessageNonStream).toHaveBeenCalledWith(
       'api-key',
@@ -1135,9 +1137,12 @@ describe('standardChatStrategy', () => {
       requestApproval: expect.any(Function),
       resolveLatestServers: expect.any(Function),
     });
-    expect(mockAppendFunctionDeclarationsToTools).toHaveBeenCalledWith('gemini-3-flash-preview', expect.any(Object), [
-      mcpFunction.declaration,
-    ]);
+    expect(mockAppendFunctionDeclarationsToTools).toHaveBeenCalledWith(
+      'gemini-3-flash-preview',
+      expect.any(Object),
+      [mcpFunction.declaration],
+      { includeServerSideToolInvocations: true },
+    );
     expect(mockRunStandardToolLoop).toHaveBeenCalledWith(
       expect.objectContaining({
         clientFunctions: {

@@ -179,6 +179,7 @@ export interface CommandInfo {
 
 export type AttachmentAction =
   | 'upload'
+  | 'drive'
   | 'library'
   | 'multimodal_search'
   | 'gallery'

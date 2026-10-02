@@ -53,7 +53,7 @@ export const getFileMetadataApi = async (apiKey: string, fileApiName: string): P
   }
   try {
     logService.info(`Fetching metadata for file: ${fileApiName}`);
-    const ai = await getConfiguredApiClient(apiKey);
+    const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
     const file = await ai.files.get({ name: fileApiName });
     return file;
   } catch (metadataError) {
@@ -75,7 +75,7 @@ export const listFilesApi = async (
 ): Promise<{ files: GeminiFile[]; nextPageToken?: string }> => {
   logService.info(`Listing files from Gemini Files API`, { pageSize, pageToken });
   try {
-    const ai = await getConfiguredApiClient(apiKey);
+    const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
     const pager = await ai.files.list({
       config: {
         pageSize,
@@ -107,7 +107,7 @@ export const deleteFileApi = async (apiKey: string, fileApiName: string): Promis
   }
   logService.info(`Deleting file from Gemini Files API: ${fileApiName}`);
   try {
-    const ai = await getConfiguredApiClient(apiKey);
+    const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
     await ai.files.delete({ name: fileApiName });
   } catch (deleteError) {
     logService.error(`Failed to delete file "${fileApiName}" from Gemini API:`, deleteError);
@@ -121,7 +121,7 @@ export const registerGcsFilesApi = async (apiKey: string, uris: string[]): Promi
   }
   logService.info(`Registering GCS files with Gemini Files API`, { uris });
   try {
-    const ai = await getConfiguredApiClient(apiKey);
+    const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
     if (typeof ai.files.registerFiles === 'function') {
       try {
         const response = await ai.files.registerFiles({ uris });

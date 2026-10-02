@@ -132,6 +132,34 @@ describe('AttachmentMenu', () => {
     expect(value.onAttachmentAction).toHaveBeenCalledWith('multimodal_search');
   });
 
+  it('shows Google Drive for Gemini and triggers the drive action', () => {
+    const value = createChatInputActionsContextValue({
+      currentModelId: 'gemini-3.7-flash',
+    });
+
+    act(() => {
+      renderer.render(
+        <ChatInputActionsContext.Provider value={value}>
+          <AttachmentMenu />
+        </ChatInputActionsContext.Provider>,
+      );
+    });
+
+    const trigger = renderer.container.querySelector<HTMLButtonElement>('button[aria-haspopup="true"]')!;
+    act(() => {
+      trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    const menuItems = Array.from(document.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'));
+    const driveButton = menuItems.find((button) => button.textContent?.includes('Google Drive'));
+    expect(driveButton).toBeDefined();
+
+    act(() => {
+      driveButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(value.onAttachmentAction).toHaveBeenCalledWith('drive');
+  });
+
   it('renders cloud icon for add by id option and triggers id action when clicked', () => {
     const value = createChatInputActionsContextValue({
       currentModelId: 'gemini-3.7-flash',

@@ -197,6 +197,62 @@ describe('getKeyForRequest', () => {
     });
   });
 
+  it('uses the dedicated Vertex Express key when that backend is active', () => {
+    const result = getKeyForRequest(
+      {
+        ...DEFAULT_APP_SETTINGS,
+        useCustomApiConfig: true,
+        googleApiBackend: 'vertex-express',
+        apiKey: 'gemini-key',
+        vertexExpressApiKey: 'vertex-key',
+      },
+      chatSettings,
+    );
+
+    expect(result).toEqual({
+      key: 'vertex-key',
+      isNewKey: true,
+    });
+  });
+
+  it('keeps Gemini and Vertex Express key rotation independent', () => {
+    const geminiSettings = {
+      ...DEFAULT_APP_SETTINGS,
+      useCustomApiConfig: true,
+      googleApiBackend: 'gemini-api' as const,
+      apiKey: 'g1,g2',
+      vertexExpressApiKey: 'v1,v2',
+    };
+    const vertexSettings = {
+      ...geminiSettings,
+      googleApiBackend: 'vertex-express' as const,
+    };
+
+    expect(getKeyForRequest(geminiSettings, chatSettings)).toEqual({ key: 'g1', isNewKey: true });
+    expect(getKeyForRequest(vertexSettings, chatSettings)).toEqual({ key: 'v1', isNewKey: true });
+    expect(getKeyForRequest(geminiSettings, chatSettings)).toEqual({ key: 'g2', isNewKey: true });
+    expect(getKeyForRequest(vertexSettings, chatSettings)).toEqual({ key: 'v2', isNewKey: true });
+  });
+
+  it('forces the Gemini Developer API key for Gemini-specific flows even while Vertex Express is active', () => {
+    const result = getGeminiKeyForRequest(
+      {
+        ...DEFAULT_APP_SETTINGS,
+        useCustomApiConfig: true,
+        googleApiBackend: 'vertex-express',
+        apiKey: 'gemini-key',
+        vertexExpressApiKey: 'vertex-key',
+      },
+      chatSettings,
+      { skipIncrement: true },
+    );
+
+    expect(result).toEqual({
+      key: 'gemini-key',
+      isNewKey: true,
+    });
+  });
+
   it('can select a key without recording usage for Live token setup', () => {
     const result = getKeyForRequest(
       {

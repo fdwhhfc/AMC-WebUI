@@ -1,4 +1,5 @@
 import type { GoogleGenAI } from '@google/genai';
+import type { GoogleApiBackend } from '@/types';
 import { dbService } from '@/services/db/dbService';
 import { logService } from '@/services/logService';
 import {
@@ -9,14 +10,22 @@ import {
   getNormalizedUpstreamBaseUrl,
   toAbsoluteHttpUrl,
 } from './geminiApiBaseUrl';
-import { normalizeGeminiApiBaseUrl } from '@/utils/api/apiProxyUrl';
+import {
+  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+  normalizeGeminiApiBaseUrl,
+  normalizeVertexExpressApiBaseUrl,
+} from '@/utils/api/apiProxyUrl';
+import { hasDeploymentApiContainer } from '@/runtime/runtimeConfig';
 import { type GeminiClientHttpOptions, withHttpOptionHeaders } from './geminiApiVersion';
 import type { InternalGeminiApiClient } from './geminiResumableUpload';
 
 type ClientConfig = {
   apiKey: string;
+  vertexai?: boolean;
   httpOptions?: GeminiClientHttpOptions;
 };
+
+const DEFAULT_GOOGLE_API_BACKEND: GoogleApiBackend = 'gemini-api';
 
 type ConfiguredApiRouting = {
   settings: Awaited<ReturnType<typeof dbService.getAppSettings>>;
@@ -46,6 +55,7 @@ export const getClient = async (
   apiKey: string,
   baseUrl?: string | null,
   httpOptions?: GeminiClientHttpOptions,
+  backend: GoogleApiBackend = DEFAULT_GOOGLE_API_BACKEND,
 ): Promise<GoogleGenAI> => {
   try {
     const sanitizedApiKey = apiKey
@@ -58,8 +68,20 @@ export const getClient = async (
       logService.warn('API key was sanitized. Non-ASCII characters were replaced.');
     }
 
-    const config: ClientConfig = { apiKey: sanitizedApiKey };
-    const mergedHttpOptions = httpOptions ? { ...httpOptions } : undefined;
+    const config: ClientConfig = {
+      apiKey: sanitizedApiKey,
+      ...(backend === 'vertex-express' ? { vertexai: true } : {}),
+    };
+    let mergedHttpOptions = httpOptions ? { ...httpOptions } : undefined;
+
+    // Vertex AI Express mode uses Vertex resource paths. Pin the stable v1
+    // endpoint unless the caller explicitly requested another API version.
+    if (backend === 'vertex-express') {
+      mergedHttpOptions = {
+        ...(mergedHttpOptions ?? {}),
+        apiVersion: mergedHttpOptions?.apiVersion ?? 'v1',
+      };
+    }
 
     if (baseUrl && baseUrl.trim().length > 0) {
       const sanitizedBaseUrl = baseUrl.includes('/api/live')
@@ -69,12 +91,14 @@ export const getClient = async (
             useApiProxy: true,
             apiProxyUrl: baseUrl,
           });
+      const backendBaseUrl =
+        backend === 'vertex-express' ? normalizeVertexExpressApiBaseUrl(sanitizedBaseUrl) : sanitizedBaseUrl;
       if (mergedHttpOptions) {
         if (!mergedHttpOptions.baseUrl) {
-          mergedHttpOptions.baseUrl = sanitizedBaseUrl;
+          mergedHttpOptions.baseUrl = backendBaseUrl;
         }
       } else {
-        config.httpOptions = { baseUrl: sanitizedBaseUrl };
+        config.httpOptions = { baseUrl: backendBaseUrl };
       }
     }
 
@@ -106,10 +130,14 @@ const loadConfiguredApiRouting = async (): Promise<ConfiguredApiRouting> => {
 export const getConfiguredApiClient = async (
   apiKey: string,
   httpOptions?: GeminiClientHttpOptions,
-  routingOverrides?: { directGoogleApi?: boolean },
+  routingOverrides?: { directGoogleApi?: boolean; backend?: GoogleApiBackend },
 ): Promise<GoogleGenAI> => {
   const { settings, apiProxyUrl } = await loadConfiguredApiRouting();
 
+  const backend =
+    routingOverrides?.backend ??
+    (settings?.useCustomApiConfig ? settings.googleApiBackend : undefined) ??
+    DEFAULT_GOOGLE_API_BACKEND;
   const effectiveApiProxyUrl = routingOverrides?.directGoogleApi ? null : apiProxyUrl;
 
   // Docker mode: when the user configured an absolute upstream proxy URL, the
@@ -118,8 +146,16 @@ export const getConfiguredApiClient = async (
   const upstreamHeader =
     settings && !routingOverrides?.directGoogleApi
       ? (() => {
-          if (!shouldAttachGeminiUpstreamHeader(settings)) return undefined;
-          const upstreamUrl = getNormalizedUpstreamBaseUrl(settings);
+          const configuredUpstream = shouldAttachGeminiUpstreamHeader(settings)
+            ? getNormalizedUpstreamBaseUrl(settings)
+            : null;
+          const normalizedConfiguredUpstream =
+            configuredUpstream && backend === 'vertex-express'
+              ? normalizeVertexExpressApiBaseUrl(configuredUpstream)
+              : configuredUpstream;
+          const vertexExpressUpstream =
+            backend === 'vertex-express' && hasDeploymentApiContainer() ? DEFAULT_VERTEX_EXPRESS_API_BASE_URL : null;
+          const upstreamUrl = normalizedConfiguredUpstream ?? vertexExpressUpstream;
           return upstreamUrl ? { 'x-gemini-upstream-base-url': upstreamUrl } : undefined;
         })()
       : undefined;
@@ -132,7 +168,7 @@ export const getConfiguredApiClient = async (
   if (authHeaders) {
     mergedHttpOptions = withHttpOptionHeaders(mergedHttpOptions, authHeaders);
   }
-  return getClient(apiKey, effectiveApiProxyUrl, mergedHttpOptions);
+  return getClient(apiKey, effectiveApiProxyUrl, mergedHttpOptions, backend);
 };
 
 export const getConfiguredApiClientContext = async (
@@ -144,7 +180,9 @@ export const getConfiguredApiClientContext = async (
     ? { 'x-access-token': settings.serverAccessPassword.trim() }
     : undefined;
   const mergedHttpOptions = authHeaders ? withHttpOptionHeaders(httpOptions, authHeaders) : httpOptions;
-  const client = await getClient(apiKey, apiProxyUrl, mergedHttpOptions);
+  // This context powers Gemini Files/resumable upload flows, which must not
+  // inherit the normal generation backend switch.
+  const client = await getClient(apiKey, apiProxyUrl, mergedHttpOptions, 'gemini-api');
 
   return {
     client,

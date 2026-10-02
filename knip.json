@@ -4,7 +4,12 @@
       "entry": ["server/src/index.ts"]
     }
   },
-  "ignore": ["docker/web-server.js", "public/runtime-config.js", "e2e/fixtures/mcp-test-server.mjs"],
+  "ignore": [
+    "docker/web-server.js",
+    "public/runtime-config.js",
+    "e2e/fixtures/mcp-test-server.mjs",
+    "functions/api/drive/*.js"
+  ],
   "ignoreDependencies": ["pyodide", "lamejs", "@iconify-json/material-icon-theme", "cookie"],
   "ignoreBinaries": ["wrangler"],
   "ignoreExportsUsedInFile": {

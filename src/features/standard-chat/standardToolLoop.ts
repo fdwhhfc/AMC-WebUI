@@ -47,6 +47,11 @@ export interface RunStandardToolLoopOptions {
   onToolResponsesSettled?: (functionResponseParts: Part[]) => void;
   /** Optional streaming callbacks forwarded to runTurn for real-time typewriter output. */
   streamCallbacks?: TurnStreamCallbacks;
+  /**
+   * Vertex Express rejects functionCall/functionResponse id fields on the wire.
+   * Keep IDs in local UI state, but omit them from the model/tool round-trip.
+   */
+  omitFunctionCallIdsFromWire?: boolean;
 }
 
 interface GroundingCarryover {
@@ -220,6 +225,7 @@ export const runStandardToolLoop = async ({
   onToolCallsStarted,
   onToolResponsesSettled,
   streamCallbacks,
+  omitFunctionCallIdsFromWire = false,
 }: RunStandardToolLoopOptions): Promise<{
   finalTurn: StandardToolTurnResult;
   toolMessages: StandardToolLoopMessagePair[];
@@ -291,7 +297,7 @@ export const runStandardToolLoop = async ({
             index,
             part: {
               functionResponse: {
-                id: call.id,
+                ...(!omitFunctionCallIdsFromWire && call.id ? { id: call.id } : {}),
                 name: call.name || 'unknown',
                 response: {
                   error: `Function ${call.name || 'unknown'} not implemented client-side.`,
@@ -307,7 +313,7 @@ export const runStandardToolLoop = async ({
             index,
             part: {
               functionResponse: {
-                id: call.id,
+                ...(!omitFunctionCallIdsFromWire && call.id ? { id: call.id } : {}),
                 name: call.name,
                 response: toStructuredToolResponse(result.response),
               },
@@ -344,9 +350,21 @@ export const runStandardToolLoop = async ({
       functionResponseParts,
     });
 
+    const modelContentForWire: ChatHistoryItem = omitFunctionCallIdsFromWire
+      ? {
+          ...turn.modelContent,
+          parts: turn.modelContent.parts.map((part) => {
+            if (!part.functionCall?.id) return part;
+            const functionCall = { ...part.functionCall };
+            delete functionCall.id;
+            return { ...part, functionCall };
+          }),
+        }
+      : turn.modelContent;
+
     contents = [
       ...contents,
-      turn.modelContent,
+      modelContentForWire,
       {
         role: 'user',
         parts: functionResponseParts,

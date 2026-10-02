@@ -74,7 +74,8 @@ export const uploadFileItem = async ({
     return;
   }
 
-  const shouldUploadFile = forceFileApi || shouldUseFileApi(file, appSettings, providerId);
+  const isVertexExpress = appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+  const shouldUploadFile = !isVertexExpress && (forceFileApi || shouldUseFileApi(file, appSettings, providerId));
 
   const dataUrl = fileToBlobUrl(file);
 

@@ -164,10 +164,20 @@ export const executeGeminiChat = async ({
     imageOutputMode,
   });
 
-  const requestConfig = appendFunctionDeclarationsToTools(apiModelId, config, [
-    ...(isLocalPythonEnabledForTurn ? localPythonFunctionDeclarations : []),
-    ...(mcpFunctionDeclarations as Parameters<typeof appendFunctionDeclarationsToTools>[2]),
-  ]);
+  const isVertexExpress = appSettings.useCustomApiConfig && appSettings.googleApiBackend === 'vertex-express';
+  const requestConfig = appendFunctionDeclarationsToTools(
+    apiModelId,
+    config,
+    [
+      ...(isLocalPythonEnabledForTurn ? localPythonFunctionDeclarations : []),
+      ...(mcpFunctionDeclarations as Parameters<typeof appendFunctionDeclarationsToTools>[2]),
+    ],
+    {
+      // This field is specific to the Gemini Developer API and is rejected by
+      // Vertex AI / Vertex Express.
+      includeServerSideToolInvocations: !isVertexExpress,
+    },
+  );
   const hasFunctionDeclarationsInRequest = !!requestConfig.tools?.some((tool) => 'functionDeclarations' in tool);
 
   const canJournalStream = isGeminiProxyRelativePath(appSettings) && finalRole === 'user' && !isContinueMode;
@@ -340,6 +350,7 @@ export const executeGeminiChat = async ({
               apiModelId,
               isServerCodeExecutionMode(sessionToUpdate),
               alwaysKeepThinking,
+              isVertexExpress,
             );
 
             if (hasFunctionDeclarationsInRequest) {
@@ -348,6 +359,7 @@ export const executeGeminiChat = async ({
                   initialContents: appendTurnToHistory(retryHistoryForChat, finalRole, retryFinalParts),
                   clientFunctions: combinedClientFunctions,
                   abortSignal: newAbortController.signal,
+                  omitFunctionCallIdsFromWire: isVertexExpress,
                   onToolCallsStarted: (modelContent) => {
                     insertInternalToolMessages([
                       createMessage('model', '', {
@@ -443,6 +455,7 @@ export const executeGeminiChat = async ({
         initialContents: appendTurnToHistory(historyForChat, finalRole, finalParts),
         clientFunctions: combinedClientFunctions,
         abortSignal: newAbortController.signal,
+        omitFunctionCallIdsFromWire: isVertexExpress,
         onToolCallsStarted: (modelContent) => {
           insertInternalToolMessages([
             createMessage('model', '', {

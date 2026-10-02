@@ -123,6 +123,78 @@ describe('runStandardToolLoop', () => {
     expect(result.finalTurn.parts).toEqual([{ text: 'The result is 42.' }]);
   });
 
+  it('omits function call and response ids on Vertex Express wire turns', async () => {
+    const initialContents: ChatHistoryItem[] = [{ role: 'user', parts: [{ text: 'Calculate 6 * 7' }] }];
+    const toolCallMessage = {
+      role: 'model' as const,
+      parts: [
+        {
+          functionCall: {
+            id: 'call-vertex-1',
+            name: 'run_local_python',
+            args: { code: 'print(6 * 7)' },
+          },
+        },
+      ],
+    };
+    const runTurn = vi
+      .fn()
+      .mockResolvedValueOnce({
+        modelContent: toolCallMessage,
+        parts: [],
+        functionCalls: [
+          {
+            id: 'call-vertex-1',
+            name: 'run_local_python',
+            args: { code: 'print(6 * 7)' },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        modelContent: { role: 'model' as const, parts: [{ text: '42' }] },
+        parts: [{ text: '42' }],
+        functionCalls: [],
+      });
+
+    await runStandardToolLoop({
+      initialContents,
+      clientFunctions: {
+        run_local_python: {
+          declaration: { name: 'run_local_python', description: 'Run Python locally.' },
+          handler: vi.fn(async () => ({ response: { result: '42' } })),
+        },
+      },
+      runTurn,
+      omitFunctionCallIdsFromWire: true,
+    });
+
+    expect(runTurn.mock.calls[1][0]).toEqual([
+      ...initialContents,
+      {
+        role: 'model',
+        parts: [
+          {
+            functionCall: {
+              name: 'run_local_python',
+              args: { code: 'print(6 * 7)' },
+            },
+          },
+        ],
+      },
+      {
+        role: 'user',
+        parts: [
+          {
+            functionResponse: {
+              name: 'run_local_python',
+              response: { result: '42' },
+            },
+          },
+        ],
+      },
+    ]);
+  });
+
   it('passes the request abort signal to client tool handlers', async () => {
     const abortController = new AbortController();
     const toolHandler = vi.fn(async () => ({

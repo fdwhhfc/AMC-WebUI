@@ -65,6 +65,37 @@ The project currently focuses on one main application shape: a **Vite + React SP
 - The main feature path for Thinking, Live API, Gemini Files API, Deep Search, Google Search, code execution, image generation, and other Gemini-specific capabilities.
 - Can be combined with AMC's Gemini proxy and server-managed credential flow.
 
+### Vertex AI Express
+
+- Enable custom API configuration in **Settings -> Providers & APIs**, then switch the Google API backend to **Vertex AI Express**.
+- Use a Vertex AI Express API key for standard generation and client/manual function calling. AMC automatically uses the Vertex `v1/publishers/google/models/*` request path.
+- Local images, PDFs, audio, and video are sent as `inlineData` instead of going through the Gemini Files API.
+- Gemini-specific transcription uploads and Live API remain on the Gemini Developer API path to avoid routing unsupported capabilities through Vertex Express.
+- Any custom proxy used with Vertex Express must understand Vertex AI Express request paths and authentication semantics.
+
+### Google Drive Attachments
+
+Google Drive can be used as a shared attachment source for both Gemini Developer API and Vertex AI Express. Before first use, configure one Google Cloud project with:
+
+1. **Google Picker API** and **Google Drive API** enabled.
+2. An OAuth 2.0 **Web application** client whose **Authorized JavaScript origins** include the actual AMC origin.
+3. A browser API key; restrict it to Google Picker API + Google Drive API and allow your AMC origin plus `https://docs.google.com/*`.
+4. The same project's **Project Number**, used as the Picker App ID.
+
+AMC requests the narrow `https://www.googleapis.com/auth/drive.file` scope. The picker opens at the **My Drive** root and only shows files owned by the current user. Google Picker does not guarantee that file size is shown inside its own list; after import, AMC displays the actual attachment size.
+
+You can enter the three values in Settings, or provide the following public frontend variables at build time:
+
+```bash
+VITE_GOOGLE_DRIVE_CLIENT_ID=your_web_client_id.apps.googleusercontent.com
+VITE_GOOGLE_DRIVE_API_KEY=your_restricted_browser_api_key
+VITE_GOOGLE_DRIVE_APP_ID=your_google_cloud_project_number
+```
+
+> These values are browser-side OAuth/Picker configuration and are visible to the frontend. Protect the browser API key with origin and API restrictions. Do not put a Gemini / Vertex model API key into these public Picker variables.
+
+Regular Drive files are downloaded into the browser and then handed to AMC's existing attachment pipeline. Google Docs, Sheets, Slides, and Drawings are exported to PDF first. Vertex AI Express sends the resulting attachments as inline multimodal data, while Gemini Developer API continues to follow AMC's existing inline / Gemini Files API policy.
+
 ### OpenAI Compatible
 
 - A **standard chat** path with its own API keys, Base URL, and model list.
