@@ -1,3 +1,4 @@
+/* global crypto, TextEncoder, btoa */
 const GOOGLE_APPS_PREFIX = 'application/vnd.google-apps.';
 const GOOGLE_APPS_EXPORTABLE_TO_PDF = new Set([
   'application/vnd.google-apps.document',
