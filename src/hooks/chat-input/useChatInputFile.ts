@@ -1,5 +1,11 @@
 import { useCallback, type Dispatch, type MutableRefObject, type RefObject, type SetStateAction } from 'react';
-import { type UploadedFile, type VideoMetadata, type MediaResolution, type SetSelectedFiles } from '@/types';
+import {
+  type AppSettings,
+  type UploadedFile,
+  type VideoMetadata,
+  type MediaResolution,
+  type SetSelectedFiles,
+} from '@/types';
 import { cleanupFilePreviewUrl } from '@/utils/file/filePreviewUrls';
 import { useFilePreProcessingEffects } from './useFilePreProcessingEffects';
 import { useChatInputFileUi } from './useChatInputFileUi';
@@ -15,6 +21,7 @@ interface ChatInputFileRefs {
 }
 
 interface UseChatInputFileParams {
+  appSettings: AppSettings;
   fileIdInput: string;
   isAddingById: boolean;
   setAddingById: (value: ChatInputBooleanUpdate) => void;
@@ -32,6 +39,7 @@ interface UseChatInputFileParams {
 }
 
 export const useChatInputFile = ({
+  appSettings,
   fileIdInput,
   isAddingById,
   setAddingById,
@@ -61,6 +69,7 @@ export const useChatInputFile = ({
   });
 
   const { modalsState, localFileState } = useChatInputFileUi({
+    appSettings,
     selectedFiles,
     setSelectedFiles,
     setInputText,
