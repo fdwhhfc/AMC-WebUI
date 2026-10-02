@@ -244,6 +244,18 @@ export const migrateLegacyOpenAICompatibleInput = (value: unknown): Partial<AppS
  * The setting auto-opens the HTML preview modal; it never forces fullscreen,
  * so the old name misdescribed the behavior.
  */
+export const migrateLegacySeparatedGoogleApiKeysInput = (value: unknown): Partial<AppSettings> => {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  const settings: Record<string, unknown> = { ...value };
+  if (!('vertexExpressApiKey' in settings) && typeof settings.apiKey === 'string' && settings.apiKey.trim()) {
+    settings.vertexExpressApiKey = settings.apiKey;
+  }
+  return settings as Partial<AppSettings>;
+};
+
 export const migrateLegacyAutoOpenHtmlPreview = (value: unknown): Partial<AppSettings> => {
   if (!isRecord(value) || !('autoFullscreenHtml' in value)) {
     return value as Partial<AppSettings>;
@@ -312,6 +324,7 @@ const appSettingsSchema: z.ZodType<AppSettings> = z.object({
   serverManagedApi: optionalBooleanWithDefault(DEFAULT_APP_SETTINGS.serverManagedApi),
   serverAccessPassword: nullableStringWithDefault(DEFAULT_APP_SETTINGS.serverAccessPassword),
   apiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.apiKey),
+  vertexExpressApiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.vertexExpressApiKey),
   apiProxyUrl: nullableStringWithDefault(DEFAULT_APP_SETTINGS.apiProxyUrl),
   useApiProxy: optionalBooleanWithDefault(DEFAULT_APP_SETTINGS.useApiProxy),
   language: withDefault(z.enum(APP_LANGUAGE_IDS), DEFAULT_APP_SETTINGS.language),
@@ -397,4 +410,8 @@ const appSettingsSchema: z.ZodType<AppSettings> = z.object({
 });
 
 export const sanitizeImportedAppSettings = (value: unknown): AppSettings =>
-  appSettingsSchema.parse(migrateLegacyOpenAICompatibleInput(migrateLegacyAutoOpenHtmlPreview(value)));
+  appSettingsSchema.parse(
+    migrateLegacySeparatedGoogleApiKeysInput(
+      migrateLegacyOpenAICompatibleInput(migrateLegacyAutoOpenHtmlPreview(value)),
+    ),
+  );
