@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_APP_SETTINGS } from '@/constants/settingsDefaults';
-import { downloadGoogleDriveFile, resolveGoogleDrivePickerConfig } from './googleDrivePicker';
+import {
+  createGoogleDriveCloudReference,
+  downloadGoogleDriveFile,
+  resolveGoogleDrivePickerConfig,
+} from './googleDrivePicker';
 
 describe('googleDrivePicker', () => {
   afterEach(() => {
@@ -20,6 +24,42 @@ describe('googleDrivePicker', () => {
       clientId: 'client-id',
       apiKey: 'api-key',
       appId: '123456',
+    });
+  });
+
+
+  it('creates a remote Drive reference without downloading file bytes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          fileUri: 'https://amc.example/api/drive/file?ticket=opaque',
+          name: 'clip.mp4',
+          mimeType: 'video/mp4',
+          size: 1024,
+          expiresAt: Date.now() + 60_000,
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('crypto', { randomUUID: () => 'test-drive-id' });
+
+    const file = await createGoogleDriveCloudReference('video-1', 'drive-token');
+
+    expect(file).toMatchObject({
+      id: 'drive-cloud-test-drive-id',
+      name: 'clip.mp4',
+      type: 'video/mp4',
+      size: 1024,
+      fileUri: 'https://amc.example/api/drive/file?ticket=opaque',
+      transferStrategy: 'remote-file-id',
+      uploadState: 'active',
+      isProcessing: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/drive/ticket', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fileId: 'video-1', accessToken: 'drive-token' }),
     });
   });
 
