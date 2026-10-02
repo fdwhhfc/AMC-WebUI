@@ -16,6 +16,7 @@ import { ApiKeyInput } from './api-config/ApiKeyInput';
 import { ApiProxySettings } from './api-config/ApiProxySettings';
 import { ApiConnectionTester } from './api-config/ApiConnectionTester';
 import { ServerAccessPasswordInput } from './api-config/ServerAccessPasswordInput';
+import { GoogleDriveSettings } from './api-config/GoogleDriveSettings';
 import { useSettingsUiStore } from '@/stores/settingsUiStore';
 import { useProviderUiStore } from '@/stores/providerUiStore';
 import { getLatencyGrade } from '@/utils/third-party/thirdPartyDiagnostics';
@@ -352,6 +353,8 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
           </div>
         </div>
       </div>
+
+      <GoogleDriveSettings settings={settings} onUpdate={onUpdate} />
 
       <div
         className="rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-surface-secondary)]/50 p-4 transition-all duration-200"
