@@ -302,6 +302,26 @@ describe('appSettingsSchema', () => {
     expect(settings.showVoiceInputButton).toBe(false);
   });
 
+  it('preserves Google Drive picker credentials from imported settings', () => {
+    const settings = sanitizeImportedAppSettings({
+      googleDriveClientId: 'client-id',
+      googleDriveApiKey: 'api-key',
+      googleDriveAppId: '123456',
+    });
+
+    expect(settings.googleDriveClientId).toBe('client-id');
+    expect(settings.googleDriveApiKey).toBe('api-key');
+    expect(settings.googleDriveAppId).toBe('123456');
+  });
+
+  it('defaults Google Drive picker credentials to null', () => {
+    const settings = sanitizeImportedAppSettings({});
+
+    expect(settings.googleDriveClientId).toBeNull();
+    expect(settings.googleDriveApiKey).toBeNull();
+    expect(settings.googleDriveAppId).toBeNull();
+  });
+
   it('preserves an explicit readingFontFamily from imported settings', () => {
     const settings = sanitizeImportedAppSettings({ readingFontFamily: 'serif' });
 
