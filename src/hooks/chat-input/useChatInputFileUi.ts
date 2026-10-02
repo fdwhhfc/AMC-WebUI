@@ -90,7 +90,7 @@ export const useChatInputFileUi = ({
     void prepareGoogleDrivePicker().catch((error) => {
       logService.warn('Google Drive browser APIs could not be preloaded.', { error });
     });
-  }, [appSettings.googleDriveApiKey, appSettings.googleDriveAppId, appSettings.googleDriveClientId]);
+  }, [appSettings]);
 
   const {
     previewFile,
