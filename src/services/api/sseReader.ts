@@ -60,10 +60,9 @@ export const parseSseJsonEvents = <T>(buffer: string): { events: T[]; rest: stri
  * to the pool.
  *
  * An idle watchdog mirrors the Gemini-native stream (chatApi.ts): a half-open
- * TCP socket or an idle-reaping proxy stalls `reader.read()` without erroring,
- * so without a timeout the UI would spin forever. A stall longer than the
- * shared VITE_STREAM_IDLE_TIMEOUT_MS budget rejects with a surfaced
- * StreamIdleTimeoutError instead.
+ * TCP socket or an idle-reaping proxy stalls `reader.read()` without erroring.
+ * The first event gets the longer VITE_STREAM_FIRST_EVENT_TIMEOUT_MS budget;
+ * after data starts flowing, VITE_STREAM_IDLE_TIMEOUT_MS applies between reads.
  */
 export const readSseStream = async <T>(
   response: Response,
@@ -80,9 +79,10 @@ export const readSseStream = async <T>(
   let buffer = '';
 
   let lastActivityAt = Date.now();
+  let hasReceivedData = false;
   let timedOut = false;
   const idleWatchdog = setInterval(() => {
-    if (hasStreamIdleTimeoutElapsed(lastActivityAt)) {
+    if (hasStreamIdleTimeoutElapsed(lastActivityAt, hasReceivedData)) {
       timedOut = true;
       void reader.cancel().catch(() => undefined);
     }
@@ -103,6 +103,7 @@ export const readSseStream = async <T>(
       const { done, value } = await reader.read();
       if (done || abortSignal.aborted) break;
 
+      hasReceivedData = true;
       lastActivityAt = Date.now();
       buffer = appendSseChunk(buffer, decoder.decode(value, { stream: true }));
       const parsed = parse(buffer);
