@@ -428,17 +428,6 @@ const getPickerSession = async (settings: AppSettings): Promise<{ accessToken: s
   return { accessToken, fileIds };
 };
 
-export const pickGoogleDriveFiles = async (settings: AppSettings): Promise<File[]> => {
-  const { accessToken, fileIds } = await getPickerSession(settings);
-  const files: File[] = [];
-
-  for (const fileId of fileIds) {
-    files.push(await downloadGoogleDriveFile(fileId, accessToken));
-  }
-
-  return files;
-};
-
 export const pickGoogleDriveAttachments = async (
   settings: AppSettings,
 ): Promise<{ localFiles: File[]; remoteFiles: UploadedFile[] }> => {
