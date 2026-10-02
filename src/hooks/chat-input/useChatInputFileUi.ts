@@ -90,11 +90,7 @@ export const useChatInputFileUi = ({
     void prepareGoogleDrivePicker().catch((error) => {
       logService.warn('Google Drive browser APIs could not be preloaded.', { error });
     });
-  }, [
-    appSettings.googleDriveApiKey,
-    appSettings.googleDriveAppId,
-    appSettings.googleDriveClientId,
-  ]);
+  }, [appSettings.googleDriveApiKey, appSettings.googleDriveAppId, appSettings.googleDriveClientId]);
 
   const {
     previewFile,
@@ -140,14 +136,7 @@ export const useChatInputFileUi = ({
       setIsConverting(false);
       textareaRef.current?.focus();
     }
-  }, [
-    appSettings,
-    justInitiatedFileOpRef,
-    onProcessFiles,
-    setAppFileError,
-    setIsConverting,
-    textareaRef,
-  ]);
+  }, [appSettings, justInitiatedFileOpRef, onProcessFiles, setAppFileError, setIsConverting, textareaRef]);
 
   const handleAttachmentAction = useCallback(
     (action: AttachmentAction) => {

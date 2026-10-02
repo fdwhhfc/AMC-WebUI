@@ -82,7 +82,9 @@ export const GoogleDriveSettings: React.FC<GoogleDriveSettingsProps> = ({ settin
       <div className="rounded-lg border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-tertiary)]/30 p-3 text-[11px] leading-relaxed text-[var(--theme-text-secondary)] space-y-1">
         <p>
           Enable both Google Picker API and Google Drive API. The OAuth client must allow this JavaScript origin:
-          {currentOrigin ? <code className="ml-1 font-mono text-[var(--theme-text-primary)]">{currentOrigin}</code> : null}
+          {currentOrigin ? (
+            <code className="ml-1 font-mono text-[var(--theme-text-primary)]">{currentOrigin}</code>
+          ) : null}
         </p>
         <p>
           Restrict the browser API key to your site plus <code className="font-mono">https://docs.google.com/*</code>,

@@ -235,7 +235,9 @@ const requestGoogleDriveAccessToken = async (config: GoogleDrivePickerConfig): P
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(
-            new Error(response.error_description || response.error || 'Google Drive authorization did not return a token.'),
+            new Error(
+              response.error_description || response.error || 'Google Drive authorization did not return a token.',
+            ),
           );
           return;
         }
@@ -261,17 +263,12 @@ export const prepareGoogleDrivePicker = async (): Promise<void> => {
   await Promise.all([ensureGoogleIdentity(), ensureGooglePicker()]);
 };
 
-const openGoogleDrivePicker = async (
-  config: GoogleDrivePickerConfig,
-  accessToken: string,
-): Promise<string[]> => {
+const openGoogleDrivePicker = async (config: GoogleDrivePickerConfig, accessToken: string): Promise<string[]> => {
   const picker = await ensureGooglePicker();
 
   return new Promise<string[]>((resolve, reject) => {
     try {
-      const docsView = new picker.DocsView(picker.ViewId.DOCS)
-        .setIncludeFolders(true)
-        .setSelectFolderEnabled(false);
+      const docsView = new picker.DocsView(picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false);
 
       const instance = new picker.PickerBuilder()
         .setAppId(config.appId)
@@ -320,9 +317,7 @@ const authorizedDriveFetch = async (url: string, accessToken: string): Promise<R
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    throw new Error(
-      `Google Drive request failed (${response.status})${detail ? `: ${detail.slice(0, 240)}` : ''}`,
-    );
+    throw new Error(`Google Drive request failed (${response.status})${detail ? `: ${detail.slice(0, 240)}` : ''}`);
   }
   return response;
 };
