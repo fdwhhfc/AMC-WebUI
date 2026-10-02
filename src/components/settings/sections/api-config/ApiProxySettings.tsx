@@ -67,7 +67,7 @@ export const ApiProxySettings: React.FC<ApiProxySettingsProps> = ({
         </select>
         <p className="text-[11px] leading-relaxed text-[var(--theme-text-secondary)]">
           {googleApiBackend === 'vertex-express'
-            ? 'Normal model generation uses Vertex AI Express. Gemini Files, transcription uploads, and Live remain on the Gemini API for compatibility.'
+            ? 'Normal model generation and chat attachments use Vertex AI Express. Dedicated transcription uploads and Live remain on the Gemini API for compatibility.'
             : 'Normal model generation uses the Gemini Developer API.'}
         </p>
       </div>
