@@ -649,6 +649,7 @@ describe('chatApi stream idle watchdog', () => {
     mockGenerateContentStream.mockImplementation((args: unknown) => {
       const config = (args as { config?: { abortSignal?: AbortSignal } })?.config;
       return (async function* () {
+        yield* [];
         if (config?.abortSignal) {
           await new Promise<void>((resolve) => {
             if (config.abortSignal?.aborted) {
