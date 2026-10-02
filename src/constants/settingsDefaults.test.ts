@@ -42,6 +42,12 @@ describe('DEFAULT_APP_SETTINGS', () => {
   it('defaults apiProxyUrl to null without hardcoded third-party endpoint', () => {
     expect(DEFAULT_APP_SETTINGS.apiProxyUrl).toBeNull();
   });
+
+  it('defaults Google Drive picker credentials to null', () => {
+    expect(DEFAULT_APP_SETTINGS.googleDriveClientId).toBeNull();
+    expect(DEFAULT_APP_SETTINGS.googleDriveApiKey).toBeNull();
+    expect(DEFAULT_APP_SETTINGS.googleDriveAppId).toBeNull();
+  });
 });
 
 describe('Live Translate settings defaults', () => {
