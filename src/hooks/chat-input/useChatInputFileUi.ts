@@ -23,7 +23,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useMultimodalSearchStore } from '@/stores/multimodalSearchStore';
 import { sanitizeFilename } from '@/utils/export/core';
 import {
-  pickGoogleDriveFiles,
+  pickGoogleDriveAttachments,
   prepareGoogleDrivePicker,
   resolveGoogleDrivePickerConfig,
 } from '@/services/googleDrive/googleDrivePicker';
@@ -125,9 +125,12 @@ export const useChatInputFileUi = ({
     setAppFileError(null);
     setIsConverting(true);
     try {
-      const files = await pickGoogleDriveFiles(appSettings);
-      if (files.length > 0) {
-        await onProcessFiles(files);
+      const { localFiles, remoteFiles } = await pickGoogleDriveAttachments(appSettings);
+      if (remoteFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...remoteFiles]);
+      }
+      if (localFiles.length > 0) {
+        await onProcessFiles(localFiles);
       }
     } catch (error) {
       logService.error('Failed to import Google Drive files:', error);
@@ -136,7 +139,15 @@ export const useChatInputFileUi = ({
       setIsConverting(false);
       textareaRef.current?.focus();
     }
-  }, [appSettings, justInitiatedFileOpRef, onProcessFiles, setAppFileError, setIsConverting, textareaRef]);
+  }, [
+    appSettings,
+    justInitiatedFileOpRef,
+    onProcessFiles,
+    setAppFileError,
+    setIsConverting,
+    setSelectedFiles,
+    textareaRef,
+  ]);
 
   const handleAttachmentAction = useCallback(
     (action: AttachmentAction) => {
