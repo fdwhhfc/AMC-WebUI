@@ -148,19 +148,30 @@ export const resolveGoogleDrivePickerConfig = (settings: AppSettings): GoogleDri
 };
 
 const loadScript = async (src: string, id: string): Promise<void> => {
-  if (document.getElementById(id)) {
+  const existing = document.getElementById(id) as HTMLScriptElement | null;
+  if (existing?.dataset.loaded === 'true') {
     return;
   }
 
   await new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.id = id;
-    script.src = src;
-    script.async = true;
-    script.defer = true;
-    script.addEventListener('load', () => resolve(), { once: true });
-    script.addEventListener('error', () => reject(new Error(`Failed to load Google script: ${src}`)), { once: true });
-    document.head.appendChild(script);
+    const script = existing ?? document.createElement('script');
+
+    const handleLoad = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    const handleError = () => reject(new Error(`Failed to load Google script: ${src}`));
+
+    script.addEventListener('load', handleLoad, { once: true });
+    script.addEventListener('error', handleError, { once: true });
+
+    if (!existing) {
+      script.id = id;
+      script.src = src;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
   });
 };
 
@@ -215,6 +226,7 @@ const requestGoogleDriveAccessToken = async (config: GoogleDrivePickerConfig): P
   }
 
   const oauth2 = await ensureGoogleIdentity();
+  const hasPriorGrant = cachedAccessToken?.clientId === config.clientId;
 
   return new Promise<string>((resolve, reject) => {
     const tokenClient = oauth2.initTokenClient({
@@ -241,7 +253,7 @@ const requestGoogleDriveAccessToken = async (config: GoogleDrivePickerConfig): P
       },
     });
 
-    tokenClient.requestAccessToken({ prompt: cachedAccessToken ? '' : 'consent' });
+    tokenClient.requestAccessToken({ prompt: hasPriorGrant ? '' : 'consent' });
   });
 };
 
