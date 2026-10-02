@@ -10,7 +10,11 @@ import {
   getNormalizedUpstreamBaseUrl,
   toAbsoluteHttpUrl,
 } from './geminiApiBaseUrl';
-import { DEFAULT_VERTEX_EXPRESS_API_BASE_URL, normalizeGeminiApiBaseUrl } from '@/utils/api/apiProxyUrl';
+import {
+  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+  normalizeGeminiApiBaseUrl,
+  normalizeVertexExpressApiBaseUrl,
+} from '@/utils/api/apiProxyUrl';
 import { hasDeploymentApiContainer } from '@/runtime/runtimeConfig';
 import { type GeminiClientHttpOptions, withHttpOptionHeaders } from './geminiApiVersion';
 import type { InternalGeminiApiClient } from './geminiResumableUpload';
@@ -87,12 +91,14 @@ export const getClient = async (
             useApiProxy: true,
             apiProxyUrl: baseUrl,
           });
+      const backendBaseUrl =
+        backend === 'vertex-express' ? normalizeVertexExpressApiBaseUrl(sanitizedBaseUrl) : sanitizedBaseUrl;
       if (mergedHttpOptions) {
         if (!mergedHttpOptions.baseUrl) {
-          mergedHttpOptions.baseUrl = sanitizedBaseUrl;
+          mergedHttpOptions.baseUrl = backendBaseUrl;
         }
       } else {
-        config.httpOptions = { baseUrl: sanitizedBaseUrl };
+        config.httpOptions = { baseUrl: backendBaseUrl };
       }
     }
 
@@ -143,9 +149,13 @@ export const getConfiguredApiClient = async (
           const configuredUpstream = shouldAttachGeminiUpstreamHeader(settings)
             ? getNormalizedUpstreamBaseUrl(settings)
             : null;
+          const normalizedConfiguredUpstream =
+            configuredUpstream && backend === 'vertex-express'
+              ? normalizeVertexExpressApiBaseUrl(configuredUpstream)
+              : configuredUpstream;
           const vertexExpressUpstream =
             backend === 'vertex-express' && hasDeploymentApiContainer() ? DEFAULT_VERTEX_EXPRESS_API_BASE_URL : null;
-          const upstreamUrl = configuredUpstream ?? vertexExpressUpstream;
+          const upstreamUrl = normalizedConfiguredUpstream ?? vertexExpressUpstream;
           return upstreamUrl ? { 'x-gemini-upstream-base-url': upstreamUrl } : undefined;
         })()
       : undefined;

@@ -86,6 +86,23 @@ describe('getClient', () => {
     });
   });
 
+  it('normalizes a Cherry Studio-style Vertex publisher endpoint before handing it to the SDK', async () => {
+    await getClient(
+      'vertex-key',
+      'https://early-pig-57.fdwhhfc.deno.net/v1/publishers/google',
+      undefined,
+      'vertex-express',
+    );
+    expect(GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'vertex-key',
+      vertexai: true,
+      httpOptions: {
+        apiVersion: 'v1',
+        baseUrl: 'https://early-pig-57.fdwhhfc.deno.net',
+      },
+    });
+  });
+
   it('throws on invalid initialization', async () => {
     vi.mocked(GoogleGenAI).mockImplementationOnce(() => {
       throw new Error('bad');
