@@ -1,4 +1,4 @@
-import type { AppSettings } from '@/types';
+import type { AppSettings, UploadedFile } from '@/types';
 
 const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const GOOGLE_API_SCRIPT_SRC = 'https://apis.google.com/js/api.js';
@@ -378,7 +378,47 @@ export const downloadGoogleDriveFile = async (fileId: string, accessToken: strin
   return new File([blob], metadata.name || `drive-${fileId}`, { type: mimeType });
 };
 
-export const pickGoogleDriveFiles = async (settings: AppSettings): Promise<File[]> => {
+interface GoogleDriveCloudTicket {
+  fileUri: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  expiresAt: number;
+  error?: string;
+}
+
+export const createGoogleDriveCloudReference = async (
+  fileId: string,
+  accessToken: string,
+): Promise<UploadedFile> => {
+  const response = await fetch('/api/drive/ticket', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fileId, accessToken }),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as Partial<GoogleDriveCloudTicket>;
+  if (!response.ok || !result.fileUri || !result.name || !result.mimeType) {
+    throw new Error(
+      result.error ||
+        `Google Drive cloud import failed (${response.status}). This deployment may not have the Drive cloud proxy configured.`,
+    );
+  }
+
+  return {
+    id: `drive-cloud-${crypto.randomUUID()}`,
+    name: result.name,
+    type: result.mimeType,
+    size: Number(result.size || 0),
+    fileUri: result.fileUri,
+    fileApiExpirationTime: new Date(Number(result.expiresAt || Date.now())).toISOString(),
+    transferStrategy: 'remote-file-id',
+    uploadState: 'active',
+    isProcessing: false,
+  };
+};
+
+const getPickerSession = async (settings: AppSettings): Promise<{ accessToken: string; fileIds: string[] }> => {
   const config = resolveGoogleDrivePickerConfig(settings);
   if (!config) {
     throw new Error(
@@ -388,6 +428,11 @@ export const pickGoogleDriveFiles = async (settings: AppSettings): Promise<File[
 
   const accessToken = await requestGoogleDriveAccessToken(config);
   const fileIds = await openGoogleDrivePicker(config, accessToken);
+  return { accessToken, fileIds };
+};
+
+export const pickGoogleDriveFiles = async (settings: AppSettings): Promise<File[]> => {
+  const { accessToken, fileIds } = await getPickerSession(settings);
   const files: File[] = [];
 
   for (const fileId of fileIds) {
@@ -395,4 +440,25 @@ export const pickGoogleDriveFiles = async (settings: AppSettings): Promise<File[
   }
 
   return files;
+};
+
+export const pickGoogleDriveAttachments = async (
+  settings: AppSettings,
+): Promise<{ localFiles: File[]; remoteFiles: UploadedFile[] }> => {
+  const { accessToken, fileIds } = await getPickerSession(settings);
+  const isVertexExpress = settings.useCustomApiConfig && settings.googleApiBackend === 'vertex-express';
+
+  if (isVertexExpress) {
+    const remoteFiles: UploadedFile[] = [];
+    for (const fileId of fileIds) {
+      remoteFiles.push(await createGoogleDriveCloudReference(fileId, accessToken));
+    }
+    return { localFiles: [], remoteFiles };
+  }
+
+  const localFiles: File[] = [];
+  for (const fileId of fileIds) {
+    localFiles.push(await downloadGoogleDriveFile(fileId, accessToken));
+  }
+  return { localFiles, remoteFiles: [] };
 };
