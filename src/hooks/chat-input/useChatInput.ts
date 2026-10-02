@@ -59,6 +59,7 @@ export const useChatInput = () => {
     handleAddFileByIdSubmit,
     handleSaveFileConfig,
   } = useChatInputFile({
+    appSettings,
     fileIdInput: inputState.fileIdInput,
     isAddingById: inputState.isAddingById,
     setAddingById: inputState.setAddingById,
