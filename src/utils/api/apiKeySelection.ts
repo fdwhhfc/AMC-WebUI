@@ -1,4 +1,9 @@
-import { type AppSettings, type ChatSettings, type ThirdPartyConnection } from '@/types';
+import {
+  type AppSettings,
+  type ChatSettings,
+  type GoogleApiBackend,
+  type ThirdPartyConnection,
+} from '@/types';
 import { API_KEY_LAST_USED_INDEX_BY_TARGET_KEY, API_KEY_LAST_USED_INDEX_KEY } from '@/constants/storageKeys';
 import { logService } from '@/services/logService';
 import { readPersistentStorageItem, writePersistentStorageItem } from '@/stores/persistentStorage';
@@ -12,6 +17,7 @@ import {
 
 export { AUTH_OPTIONAL_API_KEY, SERVER_MANAGED_API_KEY };
 const GEMINI_API_KEY_ROTATION_TARGET = '__gemini__';
+const VERTEX_EXPRESS_API_KEY_ROTATION_TARGET = '__vertex-express__';
 
 export const THIRD_PARTY_CONNECTION_MISSING_ERROR = 'Third-party connection is unavailable.';
 export const THIRD_PARTY_CONNECTION_DISABLED_ERROR = 'Third-party connection is disabled.';
@@ -35,6 +41,7 @@ type GetKeyForRequestOptions = {
   skipIncrement?: boolean;
   skipUsageLogging?: boolean;
   apiMode?: ApiKeyRequestMode;
+  googleApiBackend?: GoogleApiBackend;
   provider?: ThirdPartyConnection;
 };
 
@@ -51,6 +58,13 @@ const resolveApiKeyRequestMode = (
     ? 'third-party'
     : 'gemini-native';
 };
+
+const resolveGoogleApiBackendForKey = (
+  appSettings: AppSettings,
+  options: GetKeyForRequestOptions,
+): GoogleApiBackend =>
+  options.googleApiBackend ??
+  (appSettings.useCustomApiConfig ? (appSettings.googleApiBackend ?? 'gemini-api') : 'gemini-api');
 
 const resolveProviderForKey = (
   appSettings: AppSettings,
@@ -88,8 +102,9 @@ const getActiveApiConfig = (
   }
 
   if (appSettings.useCustomApiConfig) {
+    const googleApiBackend = resolveGoogleApiBackendForKey(appSettings, options);
     return {
-      apiKeysString: appSettings.apiKey,
+      apiKeysString: googleApiBackend === 'vertex-express' ? appSettings.vertexExpressApiKey ?? null : appSettings.apiKey,
     };
   }
   return {
@@ -204,7 +219,9 @@ export const getKeyForRequest = (
   const rotationTarget =
     apiKeyRequestMode === 'third-party'
       ? (options.provider?.id ?? route.providerId ?? GEMINI_API_KEY_ROTATION_TARGET)
-      : GEMINI_API_KEY_ROTATION_TARGET;
+      : resolveGoogleApiBackendForKey(appSettings, options) === 'vertex-express'
+        ? VERTEX_EXPRESS_API_KEY_ROTATION_TARGET
+        : GEMINI_API_KEY_ROTATION_TARGET;
   const rotationMap = readRotationMap();
   let lastUsedIndex = rotationMap[rotationTarget] ?? -1;
 
@@ -239,6 +256,7 @@ export const getGeminiKeyForRequest = (
   return getKeyForRequest(appSettings, keySettings, {
     ...options,
     apiMode: 'gemini-native',
+    googleApiBackend: 'gemini-api',
   });
 };
 
