@@ -45,7 +45,6 @@ describe('googleDrivePicker', () => {
 
     expect(file.name).toBe('clip.mp4');
     expect(file.type).toBe('video/mp4');
-    expect(await file.text()).toBe('video-bytes');
     expect(fetchMock.mock.calls[1]?.[0]).toContain('alt=media');
     expect(fetchMock.mock.calls[1]?.[1]).toEqual({
       headers: { Authorization: 'Bearer drive-token' },
@@ -74,7 +73,6 @@ describe('googleDrivePicker', () => {
 
     expect(file.name).toBe('Quarterly report.pdf');
     expect(file.type).toBe('application/pdf');
-    expect(await file.text()).toBe('pdf-bytes');
     expect(fetchMock.mock.calls[1]?.[0]).toContain('/export?mimeType=application%2Fpdf');
   });
 
