@@ -1,8 +1,5 @@
 import type { AppSettings, UploadedFile } from '@/types';
-import {
-  getApiKeyFingerprint,
-  toFileApiExpirationTime,
-} from '@/utils/chat/geminiFilesApi';
+import { getApiKeyFingerprint, toFileApiExpirationTime } from '@/utils/chat/geminiFilesApi';
 import { getUploadLifecycleForGeminiState } from '@/utils/file-upload/fileUploadPolicy';
 
 const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -443,7 +440,8 @@ export const uploadGoogleDriveFileToGemini = async (
     uploadState: lifecycle.uploadState,
     isProcessing: lifecycle.isProcessing,
     progress: 100,
-    error: lifecycle.uploadState === 'failed' ? file.error?.message || 'Gemini Files API processing failed.' : undefined,
+    error:
+      lifecycle.uploadState === 'failed' ? file.error?.message || 'Gemini Files API processing failed.' : undefined,
   };
 };
 
