@@ -257,6 +257,10 @@ const requestGoogleDriveAccessToken = async (config: GoogleDrivePickerConfig): P
   });
 };
 
+export const prepareGoogleDrivePicker = async (): Promise<void> => {
+  await Promise.all([ensureGoogleIdentity(), ensureGooglePicker()]);
+};
+
 const openGoogleDrivePicker = async (
   config: GoogleDrivePickerConfig,
   accessToken: string,
