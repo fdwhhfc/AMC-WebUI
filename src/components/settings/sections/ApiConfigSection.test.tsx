@@ -173,6 +173,33 @@ describe('ApiConfigSection', () => {
     expect(renderer.container.querySelector('#live-api-key-input')).not.toBeNull();
   });
 
+  it('stores Gemini and Vertex Express keys in separate inputs and tests the active backend key', async () => {
+    await renderApiConfigSection({
+      apiKey: 'gemini-key',
+      settings: {
+        ...settingsFixture,
+        googleApiBackend: 'vertex-express',
+        vertexExpressApiKey: 'vertex-key',
+      },
+    });
+
+    const geminiInput = renderer.container.querySelector<HTMLTextAreaElement>('#gemini-api-key-input');
+    const vertexInput = renderer.container.querySelector<HTMLTextAreaElement>('#vertex-express-api-key-input');
+    expect(geminiInput?.value).toBe('gemini-key');
+    expect(vertexInput?.value).toBe('vertex-key');
+
+    const testButton = findButton('Test Connection');
+    expect(testButton).toBeDefined();
+
+    await act(async () => {
+      testButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    await vi.waitFor(() => {
+      expect(getClientMock).toHaveBeenCalledWith('vertex-key', null, undefined, 'vertex-express');
+    });
+  });
+
   it('renders dedicated Embedding API key toggle and expands input on click', async () => {
     await renderApiConfigSection({
       apiKey: 'browser-key',
