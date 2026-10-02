@@ -53,7 +53,10 @@ export async function onRequestGet(context) {
     }
 
     const headers = new Headers();
-    headers.set('content-type', payload.mimeType || driveResponse.headers.get('content-type') || 'application/octet-stream');
+    headers.set(
+      'content-type',
+      payload.mimeType || driveResponse.headers.get('content-type') || 'application/octet-stream',
+    );
     headers.set('content-disposition', `inline; filename="${sanitizeFilename(payload.name)}"`);
     headers.set('cache-control', 'private, no-store, max-age=0');
     const contentLength = driveResponse.headers.get('content-length');

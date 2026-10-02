@@ -109,10 +109,7 @@ export async function onRequestPost(context) {
     }
 
     const expiresAt = Date.now() + TICKET_TTL_MS;
-    const ticket = await encryptTicket(
-      { fileId, accessToken, name, mimeType, exportMimeType, exp: expiresAt },
-      secret,
-    );
+    const ticket = await encryptTicket({ fileId, accessToken, name, mimeType, exportMimeType, exp: expiresAt }, secret);
     const fileUri = new URL('/api/drive/file', context.request.url);
     fileUri.searchParams.set('ticket', ticket);
 

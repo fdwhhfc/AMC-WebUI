@@ -27,7 +27,6 @@ describe('googleDrivePicker', () => {
     });
   });
 
-
   it('creates a remote Drive reference without downloading file bytes', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

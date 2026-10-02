@@ -387,10 +387,7 @@ interface GoogleDriveCloudTicket {
   error?: string;
 }
 
-export const createGoogleDriveCloudReference = async (
-  fileId: string,
-  accessToken: string,
-): Promise<UploadedFile> => {
+export const createGoogleDriveCloudReference = async (fileId: string, accessToken: string): Promise<UploadedFile> => {
   const response = await fetch('/api/drive/ticket', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

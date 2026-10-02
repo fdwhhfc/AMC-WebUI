@@ -41,12 +41,12 @@ describe('apiProxyUrl', () => {
 
   describe('normalizeVertexExpressApiBaseUrl', () => {
     it('accepts Cherry Studio-style publisher base URLs without duplicating the Vertex resource prefix', () => {
-      expect(
-        normalizeVertexExpressApiBaseUrl('https://proxy.example.com/v1/publishers/google/'),
-      ).toBe('https://proxy.example.com');
-      expect(
-        normalizeVertexExpressApiBaseUrl('https://proxy.example.com/vertex/v1/publishers/google'),
-      ).toBe('https://proxy.example.com/vertex');
+      expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com/v1/publishers/google/')).toBe(
+        'https://proxy.example.com',
+      );
+      expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com/vertex/v1/publishers/google')).toBe(
+        'https://proxy.example.com/vertex',
+      );
       expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com')).toBe('https://proxy.example.com');
     });
   });
