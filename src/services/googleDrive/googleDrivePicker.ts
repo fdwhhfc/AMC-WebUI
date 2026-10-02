@@ -61,6 +61,8 @@ interface GooglePickerView {
   setIncludeFolders: (value: boolean) => GooglePickerView;
   setSelectFolderEnabled: (value: boolean) => GooglePickerView;
   setMode: (mode: string) => GooglePickerView;
+  setOwnedByMe: (value: boolean) => GooglePickerView;
+  setParent: (parentId: string) => GooglePickerView;
 }
 
 interface GooglePickerInstance {
@@ -91,6 +93,7 @@ interface GooglePickerNamespace {
   };
   Feature: {
     MULTISELECT_ENABLED: string;
+    NAV_HIDDEN: string;
   };
   ViewId: {
     DOCS: string;
@@ -275,7 +278,9 @@ const openGoogleDrivePicker = async (config: GoogleDrivePickerConfig, accessToke
       const docsView = new picker.DocsView(picker.ViewId.DOCS)
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false)
-        .setMode(picker.DocsViewMode.LIST);
+        .setMode(picker.DocsViewMode.LIST)
+        .setOwnedByMe(true)
+        .setParent('root');
 
       const instance = new picker.PickerBuilder()
         .setAppId(config.appId)
@@ -283,6 +288,7 @@ const openGoogleDrivePicker = async (config: GoogleDrivePickerConfig, accessToke
         .setDeveloperKey(config.apiKey)
         .addView(docsView)
         .enableFeature(picker.Feature.MULTISELECT_ENABLED)
+        .enableFeature(picker.Feature.NAV_HIDDEN)
         .setCallback((data) => {
           const action = data[picker.Response.ACTION];
           if (action === picker.Action.CANCEL) {
