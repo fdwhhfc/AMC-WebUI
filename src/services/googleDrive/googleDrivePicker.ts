@@ -60,6 +60,7 @@ interface GooglePickerCallbackData {
 interface GooglePickerView {
   setIncludeFolders: (value: boolean) => GooglePickerView;
   setSelectFolderEnabled: (value: boolean) => GooglePickerView;
+  setMode: (mode: string) => GooglePickerView;
 }
 
 interface GooglePickerInstance {
@@ -93,6 +94,9 @@ interface GooglePickerNamespace {
   };
   ViewId: {
     DOCS: string;
+  };
+  DocsViewMode: {
+    LIST: string;
   };
   DocsView: new (viewId: string) => GooglePickerView;
   PickerBuilder: new () => GooglePickerBuilder;
@@ -268,7 +272,10 @@ const openGoogleDrivePicker = async (config: GoogleDrivePickerConfig, accessToke
 
   return new Promise<string[]>((resolve, reject) => {
     try {
-      const docsView = new picker.DocsView(picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false);
+      const docsView = new picker.DocsView(picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(false)
+        .setMode(picker.DocsViewMode.LIST);
 
       const instance = new picker.PickerBuilder()
         .setAppId(config.appId)
