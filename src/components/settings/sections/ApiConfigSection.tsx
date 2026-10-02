@@ -62,7 +62,7 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
   const testLatencyMs = isTesting ? null : (geminiTestResult?.latencyMs ?? null);
   const testGrade = isTesting ? null : (geminiTestResult?.grade ?? null);
 
-  const googleApiBackend = settings.googleApiBackend ?? 'gemini-api';
+  const googleApiBackend = useCustomApiConfig ? (settings.googleApiBackend ?? 'gemini-api') : 'gemini-api';
   const activeApiKey = googleApiBackend === 'vertex-express' ? (settings.vertexExpressApiKey ?? null) : apiKey;
 
   const [allowOverflow, setAllowOverflow] = useState(useCustomApiConfig);
