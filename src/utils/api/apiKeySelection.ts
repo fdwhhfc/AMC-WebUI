@@ -1,9 +1,4 @@
-import {
-  type AppSettings,
-  type ChatSettings,
-  type GoogleApiBackend,
-  type ThirdPartyConnection,
-} from '@/types';
+import { type AppSettings, type ChatSettings, type GoogleApiBackend, type ThirdPartyConnection } from '@/types';
 import { API_KEY_LAST_USED_INDEX_BY_TARGET_KEY, API_KEY_LAST_USED_INDEX_KEY } from '@/constants/storageKeys';
 import { logService } from '@/services/logService';
 import { readPersistentStorageItem, writePersistentStorageItem } from '@/stores/persistentStorage';
@@ -59,10 +54,7 @@ const resolveApiKeyRequestMode = (
     : 'gemini-native';
 };
 
-const resolveGoogleApiBackendForKey = (
-  appSettings: AppSettings,
-  options: GetKeyForRequestOptions,
-): GoogleApiBackend =>
+const resolveGoogleApiBackendForKey = (appSettings: AppSettings, options: GetKeyForRequestOptions): GoogleApiBackend =>
   options.googleApiBackend ??
   (appSettings.useCustomApiConfig ? (appSettings.googleApiBackend ?? 'gemini-api') : 'gemini-api');
 
@@ -104,7 +96,8 @@ const getActiveApiConfig = (
   if (appSettings.useCustomApiConfig) {
     const googleApiBackend = resolveGoogleApiBackendForKey(appSettings, options);
     return {
-      apiKeysString: googleApiBackend === 'vertex-express' ? appSettings.vertexExpressApiKey ?? null : appSettings.apiKey,
+      apiKeysString:
+        googleApiBackend === 'vertex-express' ? (appSettings.vertexExpressApiKey ?? null) : appSettings.apiKey,
     };
   }
   return {

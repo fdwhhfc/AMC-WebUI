@@ -82,8 +82,7 @@ export const GeminiProviderDetail: React.FC<GeminiProviderDetailProps> = ({
       });
 
       const backend = settings.useCustomApiConfig ? (settings.googleApiBackend ?? 'gemini-api') : 'gemini-api';
-      const keyToTest =
-        backend === 'vertex-express' ? (settings.vertexExpressApiKey ?? '') : (settings.apiKey ?? '');
+      const keyToTest = backend === 'vertex-express' ? (settings.vertexExpressApiKey ?? '') : (settings.apiKey ?? '');
       const firstKey = parseApiKeys(keyToTest)[0];
       if (!firstKey && settings.useCustomApiConfig && !canUseServerManaged) {
         throw new Error(t('apiConfigNoKeyProvided') || 'No API key provided');
