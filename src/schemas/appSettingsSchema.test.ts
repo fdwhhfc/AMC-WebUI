@@ -302,6 +302,25 @@ describe('appSettingsSchema', () => {
     expect(settings.showVoiceInputButton).toBe(false);
   });
 
+  it('preserves separate Gemini and Vertex Express API keys', () => {
+    const settings = sanitizeImportedAppSettings({
+      apiKey: 'gemini-key',
+      vertexExpressApiKey: 'vertex-key',
+    });
+
+    expect(settings.apiKey).toBe('gemini-key');
+    expect(settings.vertexExpressApiKey).toBe('vertex-key');
+  });
+
+  it('migrates the legacy shared Google API key into the Vertex Express key once', () => {
+    const settings = sanitizeImportedAppSettings({
+      apiKey: 'legacy-shared-key',
+    });
+
+    expect(settings.apiKey).toBe('legacy-shared-key');
+    expect(settings.vertexExpressApiKey).toBe('legacy-shared-key');
+  });
+
   it('preserves Google Drive picker credentials from imported settings', () => {
     const settings = sanitizeImportedAppSettings({
       googleDriveClientId: 'client-id',
