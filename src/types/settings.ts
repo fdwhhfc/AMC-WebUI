@@ -378,6 +378,12 @@ export interface AppSettings extends ChatSettings {
   tokenCalculatorApiKey?: string | null;
   liveApiKey?: string | null;
   embeddingApiKey?: string | null;
+  /** Google Drive Picker OAuth 2.0 Web client id. Public browser credential. */
+  googleDriveClientId?: string | null;
+  /** Google Picker developer API key. Restrict it to Picker + Drive APIs and allowed origins. */
+  googleDriveApiKey?: string | null;
+  /** Google Cloud project number used as Google Picker App ID. */
+  googleDriveAppId?: string | null;
   thirdPartyApi: ThirdPartyApiSettings;
 }
 
