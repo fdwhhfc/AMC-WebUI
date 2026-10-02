@@ -5,6 +5,7 @@ import {
   type RefObject,
   type SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -21,7 +22,11 @@ import { readUploadedTextFileContent } from '@/utils/chat-input/textFileToInput'
 import { useI18n } from '@/contexts/I18nContext';
 import { useMultimodalSearchStore } from '@/stores/multimodalSearchStore';
 import { sanitizeFilename } from '@/utils/export/core';
-import { pickGoogleDriveFiles } from '@/services/googleDrive/googleDrivePicker';
+import {
+  pickGoogleDriveFiles,
+  prepareGoogleDrivePicker,
+  resolveGoogleDrivePickerConfig,
+} from '@/services/googleDrive/googleDrivePicker';
 
 interface UseChatInputFileUiOptions {
   appSettings: AppSettings;
@@ -76,6 +81,20 @@ export const useChatInputFileUi = ({
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
   const [showFolderZipModal, setShowFolderZipModal] = useState(false);
+
+  useEffect(() => {
+    if (!resolveGoogleDrivePickerConfig(appSettings)) {
+      return;
+    }
+
+    void prepareGoogleDrivePicker().catch((error) => {
+      logService.warn('Google Drive browser APIs could not be preloaded.', { error });
+    });
+  }, [
+    appSettings.googleDriveApiKey,
+    appSettings.googleDriveAppId,
+    appSettings.googleDriveClientId,
+  ]);
 
   const {
     previewFile,
