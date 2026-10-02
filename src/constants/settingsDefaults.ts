@@ -97,6 +97,7 @@ const BASE_DEFAULT_APP_SETTINGS: Omit<AppSettings, 'thirdPartyApi'> = {
   serverManagedApi: false,
   serverAccessPassword: null,
   apiKey: null,
+  vertexExpressApiKey: null,
   apiProxyUrl: null,
   useApiProxy: false,
   language: 'system',
