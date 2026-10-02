@@ -323,7 +323,10 @@ export interface AppSettings extends ChatSettings {
   googleApiBackend?: GoogleApiBackend;
   serverManagedApi?: boolean;
   serverAccessPassword?: string | null;
+  /** Gemini Developer API keys. */
   apiKey: string | null;
+  /** Vertex AI Express API keys, stored independently from Gemini Developer API keys. */
+  vertexExpressApiKey?: string | null;
   apiProxyUrl: string | null;
   useApiProxy?: boolean;
   language: AppLanguage;
