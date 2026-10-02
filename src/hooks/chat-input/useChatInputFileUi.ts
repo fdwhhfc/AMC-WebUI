@@ -10,7 +10,13 @@ import {
   useState,
 } from 'react';
 
-import type { UploadedFile, AttachmentAction, LibraryItem, AppSettings } from '@/types';
+import type {
+  UploadedFile,
+  AttachmentAction,
+  LibraryItem,
+  AppSettings,
+  ChatSettings as IndividualChatSettings,
+} from '@/types';
 import { dbService } from '@/services/db/dbService';
 import { resolveLibraryItemToUploadedFile } from '@/utils/library/libraryFiles';
 import { EXTENSION_TO_MIME } from '@/constants/fileTypeSupport';
@@ -22,6 +28,8 @@ import { readUploadedTextFileContent } from '@/utils/chat-input/textFileToInput'
 import { useI18n } from '@/contexts/I18nContext';
 import { useMultimodalSearchStore } from '@/stores/multimodalSearchStore';
 import { sanitizeFilename } from '@/utils/export/core';
+import { getGeminiKeyForRequest, SERVER_MANAGED_API_KEY } from '@/utils/api/apiKeySelection';
+import { resolveChatApiRoute } from '@/utils/chat/chatApiRoute';
 import {
   pickGoogleDriveAttachments,
   prepareGoogleDrivePicker,
@@ -30,6 +38,8 @@ import {
 
 interface UseChatInputFileUiOptions {
   appSettings: AppSettings;
+  currentChatSettings: IndividualChatSettings;
+  setCurrentChatSettings: (updater: (prevSettings: IndividualChatSettings) => IndividualChatSettings) => void;
   selectedFiles: UploadedFile[];
   setSelectedFiles: Dispatch<SetStateAction<UploadedFile[]>>;
   setInputText: Dispatch<SetStateAction<string>>;
@@ -51,6 +61,8 @@ interface UseChatInputFileUiOptions {
 
 export const useChatInputFileUi = ({
   appSettings,
+  currentChatSettings,
+  setCurrentChatSettings,
   selectedFiles,
   setSelectedFiles,
   setInputText,
@@ -125,7 +137,34 @@ export const useChatInputFileUi = ({
     setAppFileError(null);
     setIsConverting(true);
     try {
-      const { localFiles, remoteFiles } = await pickGoogleDriveAttachments(appSettings);
+      const apiRoute = resolveChatApiRoute(appSettings, currentChatSettings);
+      const isVertexExpress =
+        apiRoute.apiMode !== 'third-party' &&
+        appSettings.useCustomApiConfig &&
+        appSettings.googleApiBackend === 'vertex-express';
+
+      let geminiApiKey: string | undefined;
+      if (apiRoute.apiMode !== 'third-party' && !isVertexExpress) {
+        const keyResult = getGeminiKeyForRequest(appSettings, currentChatSettings);
+        if ('error' in keyResult) {
+          throw new Error(keyResult.error);
+        }
+        if (keyResult.key === SERVER_MANAGED_API_KEY) {
+          throw new Error(
+            'Direct Google Drive → Gemini Files API upload requires a browser-accessible Gemini API key.',
+          );
+        }
+
+        geminiApiKey = keyResult.key;
+        if (keyResult.isNewKey) {
+          setCurrentChatSettings((previousSettings) => ({
+            ...previousSettings,
+            lockedApiKey: geminiApiKey!,
+          }));
+        }
+      }
+
+      const { localFiles, remoteFiles } = await pickGoogleDriveAttachments(appSettings, { geminiApiKey });
       if (remoteFiles.length > 0) {
         setSelectedFiles((prev) => [...prev, ...remoteFiles]);
       }
@@ -141,9 +180,11 @@ export const useChatInputFileUi = ({
     }
   }, [
     appSettings,
+    currentChatSettings,
     justInitiatedFileOpRef,
     onProcessFiles,
     setAppFileError,
+    setCurrentChatSettings,
     setIsConverting,
     setSelectedFiles,
     textareaRef,
