@@ -240,9 +240,9 @@ export const migrateLegacyOpenAICompatibleInput = (value: unknown): Partial<AppS
 };
 
 /**
- * Rename the legacy stored key `autoFullscreenHtml` to `autoOpenHtmlPreview`.
- * The setting auto-opens the HTML preview modal; it never forces fullscreen,
- * so the old name misdescribed the behavior.
+ * Split the legacy shared Google API key into the new backend-specific fields.
+ * Existing profiles keep their current key for both backends until the user
+ * edits either field independently.
  */
 export const migrateLegacySeparatedGoogleApiKeysInput = (value: unknown): Partial<AppSettings> => {
   if (!isRecord(value)) {
@@ -256,6 +256,11 @@ export const migrateLegacySeparatedGoogleApiKeysInput = (value: unknown): Partia
   return settings as Partial<AppSettings>;
 };
 
+/**
+ * Rename the legacy stored key `autoFullscreenHtml` to `autoOpenHtmlPreview`.
+ * The setting auto-opens the HTML preview modal; it never forces fullscreen,
+ * so the old name misdescribed the behavior.
+ */
 export const migrateLegacyAutoOpenHtmlPreview = (value: unknown): Partial<AppSettings> => {
   if (!isRecord(value) || !('autoFullscreenHtml' in value)) {
     return value as Partial<AppSettings>;
