@@ -390,6 +390,9 @@ const appSettingsSchema: z.ZodType<AppSettings> = z.object({
   tokenCalculatorApiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.tokenCalculatorApiKey),
   liveApiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.liveApiKey),
   embeddingApiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.embeddingApiKey),
+  googleDriveClientId: nullableStringWithDefault(DEFAULT_APP_SETTINGS.googleDriveClientId),
+  googleDriveApiKey: nullableStringWithDefault(DEFAULT_APP_SETTINGS.googleDriveApiKey),
+  googleDriveAppId: nullableStringWithDefault(DEFAULT_APP_SETTINGS.googleDriveAppId),
   thirdPartyApi: thirdPartyApiSchema,
 });
 
