@@ -3,6 +3,7 @@ import { DEFAULT_APP_SETTINGS } from '@/constants/settingsDefaults';
 import {
   createGoogleDriveCloudReference,
   downloadGoogleDriveFile,
+  uploadGoogleDriveFileToGemini,
   resolveGoogleDrivePickerConfig,
 } from './googleDrivePicker';
 
@@ -60,6 +61,54 @@ describe('googleDrivePicker', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ fileId: 'video-1', accessToken: 'drive-token' }),
     });
+  });
+
+  it('uploads a Drive file to Gemini Files API without downloading bytes into the browser', async () => {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          file: {
+            name: 'files/abc123',
+            uri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
+            displayName: 'clip.mp4',
+            mimeType: 'video/mp4',
+            sizeBytes: '61865984',
+            state: 'ACTIVE',
+            expirationTime: expiresAt,
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('crypto', { randomUUID: () => 'drive-gemini-id' });
+
+    const file = await uploadGoogleDriveFileToGemini('video-1', 'drive-token', 'gemini-key');
+
+    expect(file).toMatchObject({
+      id: 'drive-gemini-drive-gemini-id',
+      name: 'clip.mp4',
+      type: 'video/mp4',
+      size: 61865984,
+      fileApiName: 'files/abc123',
+      fileUri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
+      transferStrategy: 'files-api',
+      uploadState: 'active',
+      isProcessing: false,
+      progress: 100,
+    });
+    expect(file.fileApiExpirationTime).toBe(expiresAt);
+    expect(fetchMock).toHaveBeenCalledWith('/api/drive/gemini-upload', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-amc-drive-access-token': 'drive-token',
+        'x-amc-gemini-api-key': 'gemini-key',
+      },
+      body: JSON.stringify({ fileId: 'video-1' }),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('downloads a normal Drive blob file without changing its type', async () => {
