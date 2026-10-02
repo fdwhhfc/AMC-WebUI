@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 
-import type { UploadedFile, AttachmentAction, LibraryItem } from '@/types';
+import type { UploadedFile, AttachmentAction, LibraryItem, AppSettings } from '@/types';
 import { dbService } from '@/services/db/dbService';
 import { resolveLibraryItemToUploadedFile } from '@/utils/library/libraryFiles';
 import { EXTENSION_TO_MIME } from '@/constants/fileTypeSupport';
@@ -21,8 +21,10 @@ import { readUploadedTextFileContent } from '@/utils/chat-input/textFileToInput'
 import { useI18n } from '@/contexts/I18nContext';
 import { useMultimodalSearchStore } from '@/stores/multimodalSearchStore';
 import { sanitizeFilename } from '@/utils/export/core';
+import { pickGoogleDriveFiles } from '@/services/googleDrive/googleDrivePicker';
 
 interface UseChatInputFileUiOptions {
+  appSettings: AppSettings;
   selectedFiles: UploadedFile[];
   setSelectedFiles: Dispatch<SetStateAction<UploadedFile[]>>;
   setInputText: Dispatch<SetStateAction<string>>;
@@ -43,6 +45,7 @@ interface UseChatInputFileUiOptions {
 }
 
 export const useChatInputFileUi = ({
+  appSettings,
   selectedFiles,
   setSelectedFiles,
   setInputText,
@@ -102,6 +105,31 @@ export const useChatInputFileUi = ({
     zipInputRef.current?.click();
   }, [zipInputRef]);
 
+  const handleGoogleDrivePick = useCallback(async () => {
+    justInitiatedFileOpRef.current = true;
+    setAppFileError(null);
+    setIsConverting(true);
+    try {
+      const files = await pickGoogleDriveFiles(appSettings);
+      if (files.length > 0) {
+        await onProcessFiles(files);
+      }
+    } catch (error) {
+      logService.error('Failed to import Google Drive files:', error);
+      setAppFileError(error instanceof Error ? error.message : 'Failed to import Google Drive files.');
+    } finally {
+      setIsConverting(false);
+      textareaRef.current?.focus();
+    }
+  }, [
+    appSettings,
+    justInitiatedFileOpRef,
+    onProcessFiles,
+    setAppFileError,
+    setIsConverting,
+    textareaRef,
+  ]);
+
   const handleAttachmentAction = useCallback(
     (action: AttachmentAction) => {
       setShowAddByIdInput(false);
@@ -110,6 +138,9 @@ export const useChatInputFileUi = ({
       switch (action) {
         case 'upload':
           fileInputRef.current?.click();
+          break;
+        case 'drive':
+          void handleGoogleDrivePick();
           break;
         case 'library':
           setShowLibraryPicker(true);
@@ -154,7 +185,7 @@ export const useChatInputFileUi = ({
           break;
       }
     },
-    [cameraInputRef, fileInputRef, imageInputRef, onScreenshot, videoInputRef, zipInputRef],
+    [cameraInputRef, fileInputRef, handleGoogleDrivePick, imageInputRef, onScreenshot, videoInputRef, zipInputRef],
   );
 
   const handleImportFromLibrary = useCallback(
