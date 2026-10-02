@@ -14,7 +14,10 @@
 const STREAM_FIRST_EVENT_TIMEOUT_MS = readTimeoutMs('VITE_STREAM_FIRST_EVENT_TIMEOUT_MS', 300_000);
 const STREAM_IDLE_TIMEOUT_MS = readTimeoutMs('VITE_STREAM_IDLE_TIMEOUT_MS', 120_000);
 
-function readTimeoutMs(envName: 'VITE_STREAM_FIRST_EVENT_TIMEOUT_MS' | 'VITE_STREAM_IDLE_TIMEOUT_MS', fallback: number): number {
+function readTimeoutMs(
+  envName: 'VITE_STREAM_FIRST_EVENT_TIMEOUT_MS' | 'VITE_STREAM_IDLE_TIMEOUT_MS',
+  fallback: number,
+): number {
   const raw = import.meta.env?.[envName];
   if (typeof raw === 'string' && raw.trim()) {
     const parsed = Number(raw.trim());
