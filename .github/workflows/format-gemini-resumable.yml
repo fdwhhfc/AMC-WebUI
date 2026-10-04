@@ -1,0 +1,32 @@
+name: Format Gemini resumable upload
+
+on:
+  push:
+    branches:
+      - feature/vertex-express
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/vertex-express
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write functions/api/drive/gemini-init.js functions/api/drive/gemini-chunk.js functions/api/drive/gemini-query.js src/services/googleDrive/googleDrivePicker.ts src/services/googleDrive/googleDrivePicker.test.ts
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add functions/api/drive/gemini-init.js functions/api/drive/gemini-chunk.js functions/api/drive/gemini-query.js src/services/googleDrive/googleDrivePicker.ts src/services/googleDrive/googleDrivePicker.test.ts
+          git diff --cached --quiet || git commit -m "chore: format Gemini resumable upload"
+          git push
