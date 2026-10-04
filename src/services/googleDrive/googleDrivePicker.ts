@@ -389,41 +389,59 @@ interface GoogleDriveCloudTicket {
   error?: string;
 }
 
-interface GoogleDriveGeminiUploadResponse {
-  file?: {
-    name?: string;
-    uri?: string;
-    displayName?: string;
-    mimeType?: string;
-    sizeBytes?: string | number;
-    state?: string;
-    expirationTime?: string;
-    error?: {
-      message?: string;
-    };
+interface GeminiUploadedFileResource {
+  name?: string;
+  uri?: string;
+  displayName?: string;
+  mimeType?: string;
+  sizeBytes?: string | number;
+  state?: string;
+  expirationTime?: string;
+  error?: {
+    message?: string;
   };
+}
+
+interface GoogleDriveGeminiUploadResponse {
+  file?: GeminiUploadedFileResource;
   error?: string;
 }
 
-export const uploadGoogleDriveFileToGemini = async (
-  fileId: string,
-  accessToken: string,
-  geminiApiKey: string,
-): Promise<UploadedFile> => {
-  const response = await fetch('/api/drive/gemini-upload', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-amc-drive-access-token': accessToken,
-      'x-amc-gemini-api-key': geminiApiKey,
-    },
-    body: JSON.stringify({ fileId }),
+interface GoogleDriveGeminiInitResponse {
+  mode?: 'resumable' | 'single';
+  reason?: string;
+  fileId?: string;
+  uploadUrl?: string;
+  name?: string;
+  mimeType?: string;
+  size?: number;
+  chunkSize?: number;
+  granularity?: number | null;
+  error?: string;
+}
+
+interface GoogleDriveGeminiChunkResponse {
+  ok?: boolean;
+  nextOffset?: number;
+  file?: GeminiUploadedFileResource;
+  error?: string;
+  recoverable?: boolean;
+}
+
+interface GoogleDriveGeminiQueryResponse {
+  received?: number;
+  status?: string;
+  error?: string;
+}
+
+const sleep = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, milliseconds);
   });
 
-  const result = (await response.json().catch(() => ({}))) as GoogleDriveGeminiUploadResponse;
-  const file = result.file;
-  if (!response.ok || !file?.name || !file.uri) {
-    throw new Error(result.error || `Google Drive → Gemini Files API upload failed (${response.status}).`);
+const toUploadedGeminiFile = (file: GeminiUploadedFileResource, geminiApiKey: string): UploadedFile => {
+  if (!file.name || !file.uri) {
+    throw new Error('Gemini Files API returned an incomplete file resource.');
   }
 
   const lifecycle = getUploadLifecycleForGeminiState(file.state);
@@ -443,6 +461,175 @@ export const uploadGoogleDriveFileToGemini = async (
     error:
       lifecycle.uploadState === 'failed' ? file.error?.message || 'Gemini Files API processing failed.' : undefined,
   };
+};
+
+const uploadGoogleDriveFileToGeminiSingleRequest = async (
+  fileId: string,
+  accessToken: string,
+  geminiApiKey: string,
+): Promise<UploadedFile> => {
+  const response = await fetch('/api/drive/gemini-upload', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-amc-drive-access-token': accessToken,
+      'x-amc-gemini-api-key': geminiApiKey,
+    },
+    body: JSON.stringify({ fileId }),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as GoogleDriveGeminiUploadResponse;
+  if (!response.ok || !result.file?.name || !result.file.uri) {
+    throw new Error(result.error || `Google Drive → Gemini Files API upload failed (${response.status}).`);
+  }
+  return toUploadedGeminiFile(result.file, geminiApiKey);
+};
+
+const queryGeminiResumableUpload = async (
+  uploadUrl: string,
+  geminiApiKey: string,
+): Promise<GoogleDriveGeminiQueryResponse> => {
+  const response = await fetch('/api/drive/gemini-query', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-amc-gemini-api-key': geminiApiKey,
+    },
+    body: JSON.stringify({ uploadUrl }),
+  });
+  const result = (await response.json().catch(() => ({}))) as GoogleDriveGeminiQueryResponse;
+  if (!response.ok) {
+    throw new Error(result.error || `Gemini upload progress query failed (${response.status}).`);
+  }
+  return result;
+};
+
+const uploadGeminiResumableChunk = async (params: {
+  fileId: string;
+  accessToken: string;
+  geminiApiKey: string;
+  uploadUrl: string;
+  mimeType: string;
+  offset: number;
+  length: number;
+  totalSize: number;
+}): Promise<GoogleDriveGeminiChunkResponse> => {
+  const response = await fetch('/api/drive/gemini-chunk', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-amc-drive-access-token': params.accessToken,
+      'x-amc-gemini-api-key': params.geminiApiKey,
+    },
+    body: JSON.stringify({
+      fileId: params.fileId,
+      uploadUrl: params.uploadUrl,
+      mimeType: params.mimeType,
+      offset: params.offset,
+      length: params.length,
+      totalSize: params.totalSize,
+    }),
+  });
+  const result = (await response.json().catch(() => ({}))) as GoogleDriveGeminiChunkResponse;
+  if (!response.ok) {
+    throw new Error(result.error || `Gemini resumable upload chunk failed (${response.status}).`);
+  }
+  return result;
+};
+
+export const uploadGoogleDriveFileToGemini = async (
+  fileId: string,
+  accessToken: string,
+  geminiApiKey: string,
+): Promise<UploadedFile> => {
+  const initResponse = await fetch('/api/drive/gemini-init', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-amc-drive-access-token': accessToken,
+      'x-amc-gemini-api-key': geminiApiKey,
+    },
+    body: JSON.stringify({ fileId }),
+  });
+  const init = (await initResponse.json().catch(() => ({}))) as GoogleDriveGeminiInitResponse;
+
+  if (!initResponse.ok) {
+    throw new Error(init.error || `Gemini resumable upload initialization failed (${initResponse.status}).`);
+  }
+
+  if (init.mode === 'single') {
+    return uploadGoogleDriveFileToGeminiSingleRequest(fileId, accessToken, geminiApiKey);
+  }
+
+  if (
+    init.mode !== 'resumable' ||
+    !init.uploadUrl ||
+    !init.mimeType ||
+    !Number.isFinite(init.size) ||
+    Number(init.size) <= 0 ||
+    !Number.isFinite(init.chunkSize) ||
+    Number(init.chunkSize) <= 0
+  ) {
+    throw new Error('Gemini resumable upload initialization returned an invalid session.');
+  }
+
+  const totalSize = Number(init.size);
+  const chunkSize = Number(init.chunkSize);
+  let offset = 0;
+  let consecutiveFailures = 0;
+
+  while (offset < totalSize) {
+    const length = Math.min(chunkSize, totalSize - offset);
+
+    try {
+      const result = await uploadGeminiResumableChunk({
+        fileId,
+        accessToken,
+        geminiApiKey,
+        uploadUrl: init.uploadUrl,
+        mimeType: init.mimeType,
+        offset,
+        length,
+        totalSize,
+      });
+
+      if (result.file?.name && result.file.uri) {
+        return toUploadedGeminiFile(result.file, geminiApiKey);
+      }
+
+      const nextOffset = Number(result.nextOffset);
+      if (!Number.isFinite(nextOffset) || nextOffset <= offset || nextOffset > totalSize) {
+        throw new Error('Gemini resumable upload returned an invalid next offset.');
+      }
+
+      offset = nextOffset;
+      consecutiveFailures = 0;
+    } catch (error) {
+      consecutiveFailures += 1;
+      if (consecutiveFailures > 5) {
+        throw error;
+      }
+
+      await sleep(Math.min(4000, 500 * 2 ** (consecutiveFailures - 1)));
+
+      try {
+        const status = await queryGeminiResumableUpload(init.uploadUrl, geminiApiKey);
+        const received = Number(status.received || 0);
+        if (Number.isFinite(received) && received >= 0 && received <= totalSize) {
+          offset = received;
+        }
+        if (status.status && status.status !== 'active' && offset < totalSize) {
+          throw new Error(`Gemini resumable upload session is no longer active (${status.status}).`);
+        }
+      } catch (queryError) {
+        if (consecutiveFailures >= 5) {
+          throw queryError;
+        }
+      }
+    }
+  }
+
+  throw new Error('Gemini resumable upload finished without returning a file resource.');
 };
 
 export const createGoogleDriveCloudReference = async (fileId: string, accessToken: string): Promise<UploadedFile> => {
