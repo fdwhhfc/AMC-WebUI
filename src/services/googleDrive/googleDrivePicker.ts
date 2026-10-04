@@ -619,7 +619,7 @@ export const uploadGoogleDriveFileToGemini = async (
           offset = received;
         }
         if (status.status && status.status !== 'active' && offset < totalSize) {
-          throw new Error(`Gemini resumable upload session is no longer active (${status.status}).`);
+          throw new Error(`Gemini resumable upload session is no longer active (${status.status}).`, { cause: error });
         }
       } catch (queryError) {
         if (consecutiveFailures >= 5) {
