@@ -114,9 +114,7 @@ export async function onRequestPost(context) {
       const detail = await safeErrorDetail(startResponse);
       return json(
         {
-          error:
-            `Gemini Files API upload session failed (${startResponse.status})` +
-            (detail ? `: ${detail}` : ''),
+          error: `Gemini Files API upload session failed (${startResponse.status})` + (detail ? `: ${detail}` : ''),
         },
         502,
       );

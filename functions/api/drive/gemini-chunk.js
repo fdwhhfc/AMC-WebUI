@@ -66,8 +66,7 @@ export async function onRequestPost(context) {
 
     const end = offset + length - 1;
     const driveUrl =
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}` +
-      '?alt=media&supportsAllDrives=true';
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}` + '?alt=media&supportsAllDrives=true';
 
     const driveResponse = await fetch(driveUrl, {
       headers: {
@@ -127,9 +126,7 @@ export async function onRequestPost(context) {
       const detail = await safeErrorDetail(uploadResponse);
       return json(
         {
-          error:
-            `Gemini resumable upload chunk failed (${uploadResponse.status})` +
-            (detail ? `: ${detail}` : ''),
+          error: `Gemini resumable upload chunk failed (${uploadResponse.status})` + (detail ? `: ${detail}` : ''),
           offset,
           length,
           recoverable: uploadResponse.status >= 500 || uploadResponse.status === 409,

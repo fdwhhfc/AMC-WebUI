@@ -85,7 +85,9 @@ describe('googleDrivePicker', () => {
         );
       }
       if (url === '/api/drive/gemini-chunk') {
-        const chunkCalls = fetchMock.mock.calls.filter(([candidate]) => String(candidate) === '/api/drive/gemini-chunk');
+        const chunkCalls = fetchMock.mock.calls.filter(
+          ([candidate]) => String(candidate) === '/api/drive/gemini-chunk',
+        );
         if (chunkCalls.length === 1) {
           return new Response(JSON.stringify({ ok: true, nextOffset: chunkSize }), {
             status: 200,
