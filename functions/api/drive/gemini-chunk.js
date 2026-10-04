@@ -114,6 +114,15 @@ export async function onRequestPost(context) {
       redirect: 'manual',
     });
 
+    if (uploadResponse.status === 308) {
+      const receivedHeader = Number(uploadResponse.headers.get('x-goog-upload-size-received') || 0);
+      const rangeHeader = uploadResponse.headers.get('range') || '';
+      const rangeMatch = /bytes=0-(\d+)/i.exec(rangeHeader);
+      const rangeOffset = rangeMatch ? Number(rangeMatch[1]) + 1 : 0;
+      const nextOffset = receivedHeader > 0 ? receivedHeader : rangeOffset > 0 ? rangeOffset : offset + length;
+      return json({ ok: true, nextOffset });
+    }
+
     if (!uploadResponse.ok) {
       const detail = await safeErrorDetail(uploadResponse);
       return json(
@@ -130,7 +139,8 @@ export async function onRequestPost(context) {
     }
 
     if (!isFinal) {
-      return json({ ok: true, nextOffset: offset + length });
+      const receivedHeader = Number(uploadResponse.headers.get('x-goog-upload-size-received') || 0);
+      return json({ ok: true, nextOffset: receivedHeader > 0 ? receivedHeader : offset + length });
     }
 
     const payload = await uploadResponse.json().catch(() => null);
