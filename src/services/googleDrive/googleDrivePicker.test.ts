@@ -63,24 +63,55 @@ describe('googleDrivePicker', () => {
     });
   });
 
-  it('uploads a Drive file to Gemini Files API without downloading bytes into the browser', async () => {
+  it('uploads a Drive file to Gemini Files API in resumable cloud chunks', async () => {
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          file: {
-            name: 'files/abc123',
-            uri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
-            displayName: 'clip.mp4',
+    const size = 12 * 1024 * 1024;
+    const chunkSize = 8 * 1024 * 1024;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/drive/gemini-init') {
+        return new Response(
+          JSON.stringify({
+            mode: 'resumable',
+            fileId: 'video-1',
+            uploadUrl: 'https://generativelanguage.googleapis.com/upload/session-1',
+            name: 'clip.mp4',
             mimeType: 'video/mp4',
-            sizeBytes: '61865984',
-            state: 'ACTIVE',
-            expirationTime: expiresAt,
-          },
-        }),
-        { status: 200, headers: { 'content-type': 'application/json' } },
-      ),
-    );
+            size,
+            chunkSize,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/drive/gemini-chunk') {
+        const chunkCalls = fetchMock.mock.calls.filter(([candidate]) => String(candidate) === '/api/drive/gemini-chunk');
+        if (chunkCalls.length === 1) {
+          return new Response(JSON.stringify({ ok: true, nextOffset: chunkSize }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            nextOffset: size,
+            file: {
+              name: 'files/abc123',
+              uri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
+              displayName: 'clip.mp4',
+              mimeType: 'video/mp4',
+              sizeBytes: String(size),
+              state: 'ACTIVE',
+              expirationTime: expiresAt,
+            },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('crypto', { randomUUID: () => 'drive-gemini-id' });
 
@@ -90,7 +121,7 @@ describe('googleDrivePicker', () => {
       id: 'drive-gemini-drive-gemini-id',
       name: 'clip.mp4',
       type: 'video/mp4',
-      size: 61865984,
+      size,
       fileApiName: 'files/abc123',
       fileUri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123',
       transferStrategy: 'files-api',
@@ -99,16 +130,10 @@ describe('googleDrivePicker', () => {
       progress: 100,
     });
     expect(file.fileApiExpirationTime).toBe(expiresAt);
-    expect(fetchMock).toHaveBeenCalledWith('/api/drive/gemini-upload', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-amc-drive-access-token': 'drive-token',
-        'x-amc-gemini-api-key': 'gemini-key',
-      },
-      body: JSON.stringify({ fileId: 'video-1' }),
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const chunkCalls = fetchMock.mock.calls.filter(([input]) => String(input) === '/api/drive/gemini-chunk');
+    expect(chunkCalls).toHaveLength(2);
+    expect(fetchMock.mock.calls.some(([input]) => String(input) === '/api/drive/gemini-upload')).toBe(false);
   });
 
   it('downloads a normal Drive blob file without changing its type', async () => {
