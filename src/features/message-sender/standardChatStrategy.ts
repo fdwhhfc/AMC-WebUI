@@ -208,6 +208,10 @@ export const sendStandardMessage = async (params: SendStandardMessageParams) => 
 
         let filesReadyForSend: UploadedFile[];
         const apiRoute = resolveChatApiRoute(appSettings, settingsForApi);
+        const isVertexExpress =
+          apiRoute.apiMode !== 'third-party' &&
+          appSettings.useCustomApiConfig &&
+          appSettings.googleApiBackend === 'vertex-express';
         if (apiRoute.apiMode === 'third-party') {
           const openAiFilesResult = prepareFilesForOpenAICompatibleMode(readyFiles);
           if (!openAiFilesResult.ok) {
@@ -223,6 +227,17 @@ export const sendStandardMessage = async (params: SendStandardMessageParams) => 
             };
           }
           filesReadyForSend = openAiFilesResult.files;
+        } else if (isVertexExpress) {
+          // Vertex Express does not expose the Gemini Files API. Keep the local
+          // Blob/File and let buildContentParts emit native inlineData.
+          filesReadyForSend = readyFiles.map((file) =>
+            file.transferStrategy === 'remote-file-id' && file.fileUri
+              ? file
+              : {
+                  ...file,
+                  transferStrategy: 'inline' as const,
+                },
+          );
         } else {
           const fileRefResult = await ensureFilesApiReferences({
             files: readyFiles,

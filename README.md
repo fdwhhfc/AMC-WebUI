@@ -65,6 +65,37 @@
 - 项目的主能力路径，适用于 Thinking、Live API、Gemini Files API、Deep Search、Google Search、代码执行、图片生成等 Gemini 专属能力
 - 可结合 AMC 自带的 Gemini 代理与服务端托管密钥能力使用
 
+### Vertex AI Express
+
+- 在 **设置 -> 服务商与 API** 中启用自定义 API 配置，并将 Google API 后端切换为 **Vertex AI Express**
+- 使用 Vertex AI Express API Key 调用标准生成与客户端/手动 Function Calling；AMC 会自动使用 Vertex `v1/publishers/google/models/*` 路径
+- 本地图片、PDF、音频、视频会以 `inlineData` 发送，不经过 Gemini Files API
+- Gemini 专用的转写上传与 Live API 仍保持 Gemini Developer API 路径，以避免不兼容能力被误路由
+- 自定义代理若用于 Vertex Express，必须兼容 Vertex AI Express 的请求路径和认证方式
+
+### Google Drive 附件
+
+Google Drive 可作为 Gemini Developer API 与 Vertex AI Express 共用的附件来源。首次使用前，需要在同一个 Google Cloud 项目中完成：
+
+1. 启用 **Google Picker API** 与 **Google Drive API**
+2. 创建 OAuth 2.0 **Web application** Client ID，并把 AMC 的实际访问地址加入 **Authorized JavaScript origins**
+3. 创建浏览器 API Key；建议把 API 限制为 Google Picker API + Google Drive API，并把站点地址及 `https://docs.google.com/*` 加入网站来源限制
+4. 使用该项目的 **Project Number** 作为 Picker App ID
+
+AMC 使用最小权限 `https://www.googleapis.com/auth/drive.file`。Picker 默认从 **My Drive** 根目录打开，并仅展示当前用户拥有的文件；Google Picker 本身不保证显示文件大小，文件导入 AMC 后会在附件预览中显示实际大小。
+
+可在设置界面填写以下三项，也可在静态构建时提供对应的公开前端变量：
+
+```bash
+VITE_GOOGLE_DRIVE_CLIENT_ID=your_web_client_id.apps.googleusercontent.com
+VITE_GOOGLE_DRIVE_API_KEY=your_restricted_browser_api_key
+VITE_GOOGLE_DRIVE_APP_ID=your_google_cloud_project_number
+```
+
+> 这些值用于浏览器端 OAuth/Picker 配置，会暴露给前端；其中 API Key 应通过来源与 API 限制保护。不要把 Gemini / Vertex 模型 API Key 当作这些 Picker 配置写进公开变量。
+
+普通 Drive 文件会先下载到浏览器再进入 AMC 现有附件流程；Google Docs、Sheets、Slides 与 Drawings 会先导出为 PDF。Vertex AI Express 会把这些附件以内联多模态数据发送，Gemini Developer API 则继续遵循 AMC 现有的 inline / Gemini Files API 策略。
+
 ### OpenAI 兼容模式
 
 - 面向 **标准聊天** 的兼容路径，使用独立的 API Key、Base URL 和模型列表

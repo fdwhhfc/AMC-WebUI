@@ -11,7 +11,11 @@ import { resolveSupportedModelId } from '@/utils/model/modelSorting';
 import { dbService } from '@/services/db/dbService';
 import { normalizeLiveArtifactsSystemPrompts } from '@/utils/live-ui/liveUiPromptSettings';
 import { sanitizeThirdPartyApiSettings } from '@/utils/third-party/thirdPartyApiProviders';
-import { migrateLegacyAutoOpenHtmlPreview, migrateLegacyOpenAICompatibleInput } from '@/schemas/appSettingsSchema';
+import {
+  migrateLegacyAutoOpenHtmlPreview,
+  migrateLegacyOpenAICompatibleInput,
+  migrateLegacySeparatedGoogleApiKeysInput,
+} from '@/schemas/appSettingsSchema';
 import { type ConcreteThemeId } from '@/utils/theme/themeMode';
 import { resolveUpdaterOrValue, type UpdaterOrValue } from './stateUpdaters';
 import { getChatSyncChannel } from '@/stores/sync/chatSyncChannel';
@@ -143,8 +147,8 @@ function buildLoadedAppSettings(
     preloadOverrides?.transcriptionModelId === undefined;
   // Fold legacy stored keys: autoFullscreenHtml → autoOpenHtmlPreview, then
   // legacy top-level openaiCompatible* fields into thirdPartyApi.providers.openai.
-  const migratedStoredSettings = migrateLegacyOpenAICompatibleInput(
-    migrateLegacyAutoOpenHtmlPreview(storedSettings ?? {}),
+  const migratedStoredSettings = migrateLegacySeparatedGoogleApiKeysInput(
+    migrateLegacyOpenAICompatibleInput(migrateLegacyAutoOpenHtmlPreview(storedSettings ?? {})),
   );
   const appSettings = sanitizeAppSettings({
     ...defaultSettings,

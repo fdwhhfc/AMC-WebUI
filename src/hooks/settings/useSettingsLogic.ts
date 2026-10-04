@@ -31,6 +31,7 @@ export const ANCHOR_SCROLL_LOCK_MS = 1200;
  * flags, third-party providers, or MCP servers. */
 const SETTINGS_RESET_PRESERVED_KEYS: ReadonlyArray<keyof AppSettings> = [
   'apiKey',
+  'vertexExpressApiKey',
   'useCustomApiConfig',
   'serverManagedApi',
   'useApiProxy',

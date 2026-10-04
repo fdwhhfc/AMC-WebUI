@@ -617,7 +617,7 @@ describe('chatApi stream idle watchdog', () => {
       }
     })();
 
-  it('surfaces a stream error when no chunk arrives within the idle budget', async () => {
+  it('surfaces a stream error when an active stream goes silent beyond the idle budget', async () => {
     mockGenerateContentStream.mockImplementation(abortableStalledStream);
 
     const onError = vi.fn();
@@ -636,10 +636,53 @@ describe('chatApi stream idle watchdog', () => {
       onComplete,
     );
 
-    // Advance past the default 60s idle budget (plus one watchdog tick).
-    // advanceTimersByTimeAsync lets the abort→resolve microtasks flush so the
-    // stalled generator settles and the loop reaches its timeout branch.
-    await vi.advanceTimersByTimeAsync(70_000);
+    // The stream has already yielded one chunk, so the 2-minute steady-state
+    // idle budget applies. Advance beyond it plus a watchdog tick.
+    await vi.advanceTimersByTimeAsync(130_000);
+    await sendPromise;
+
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ name: 'StreamIdleTimeoutError' }));
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('allows a long first-response wait before any stream chunk arrives', async () => {
+    mockGenerateContentStream.mockImplementation((args: unknown) => {
+      const config = (args as { config?: { abortSignal?: AbortSignal } })?.config;
+      return (async function* () {
+        yield* [];
+        if (config?.abortSignal) {
+          await new Promise<void>((resolve) => {
+            if (config.abortSignal?.aborted) {
+              resolve();
+              return;
+            }
+            config.abortSignal?.addEventListener('abort', () => resolve(), { once: true });
+          });
+        }
+      })();
+    });
+
+    const onError = vi.fn();
+    const onComplete = vi.fn();
+
+    const sendPromise = sendStatelessMessageStreamApi(
+      'key',
+      'gemini-3-flash-preview',
+      [],
+      [{ text: 'analyze a large uploaded file' }],
+      {},
+      new AbortController().signal,
+      vi.fn(),
+      vi.fn(),
+      onError,
+      onComplete,
+    );
+
+    await vi.advanceTimersByTimeAsync(180_000);
+    expect(onError).not.toHaveBeenCalled();
+
+    // The first-event budget is 5 minutes. Advance beyond it plus a watchdog tick.
+    await vi.advanceTimersByTimeAsync(130_000);
     await sendPromise;
 
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ name: 'StreamIdleTimeoutError' }));
@@ -676,8 +719,7 @@ describe('chatApi stream idle watchdog', () => {
       onComplete,
     );
 
-    // A 30s gap (typical deep-search server-side search window) is within the
-    // default 60s budget: the watchdog must NOT fire.
+    // A 30s gap is well within the 2-minute steady-state budget.
     await vi.advanceTimersByTimeAsync(30_000);
     releaseSecondChunk();
     await sendPromise;

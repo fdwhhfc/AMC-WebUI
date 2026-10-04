@@ -278,7 +278,7 @@ export async function transcribeAudioWithGemini(
 
     // Try primary path: SDK ai.models.generateContent
     try {
-      const ai = await getConfiguredApiClient(apiKey);
+      const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
       if (ai?.models && typeof ai.models.generateContent === 'function') {
         const response = await ai.models.generateContent({
           model: 'gemini-3.5-transcribe',
@@ -316,7 +316,7 @@ export async function transcribeAudioWithGemini(
     // Fallback 1: Check interactions.create (for Vertex AI compatibility)
     if (!transcriptionResult) {
       try {
-        const ai = await getConfiguredApiClient(apiKey);
+        const ai = await getConfiguredApiClient(apiKey, undefined, { backend: 'gemini-api' });
         if (ai?.interactions && typeof (ai as any).interactions.create === 'function') {
           transcriptionResult = await (ai as any).interactions.create(
             {

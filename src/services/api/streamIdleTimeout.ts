@@ -1,28 +1,31 @@
 /**
  * Shared idle watchdog for streaming responses.
  *
- * Both the Gemini-native stream (chatApi.ts) and the third-party SSE readers
- * (OpenAI-compatible, Anthropic) surface a silent upstream stall — a half-open
- * TCP socket or a proxy that reaps an idle connection does not raise an error
- * event, so a `for await`/reader loop would just wait forever — as a surfaced
- * stream error instead of an infinite spinner.
+ * Streaming has two materially different quiet periods:
+ * - before the first response chunk, the model may still be preparing a large
+ *   file or doing server-side work, so allow a longer first-event budget;
+ * - after streaming has started, a long silent gap is more likely to be a
+ *   stalled connection, so use a shorter steady-state idle budget.
  *
- * Deep search runs Google Search on the Gemini server, so the SSE can
- * legitimately sit silent for 10-60s between chunks; hence the generous 60s
- * default. Override via VITE_STREAM_IDLE_TIMEOUT_MS when a deployment needs a
- * longer budget.
+ * Defaults:
+ * - VITE_STREAM_FIRST_EVENT_TIMEOUT_MS: 300000 ms (5 minutes)
+ * - VITE_STREAM_IDLE_TIMEOUT_MS: 120000 ms (2 minutes)
  */
-const STREAM_IDLE_TIMEOUT_MS = readStreamIdleTimeoutMs();
+const STREAM_FIRST_EVENT_TIMEOUT_MS = readTimeoutMs('VITE_STREAM_FIRST_EVENT_TIMEOUT_MS', 300_000);
+const STREAM_IDLE_TIMEOUT_MS = readTimeoutMs('VITE_STREAM_IDLE_TIMEOUT_MS', 120_000);
 
-function readStreamIdleTimeoutMs(): number {
-  const raw = import.meta.env?.VITE_STREAM_IDLE_TIMEOUT_MS;
+function readTimeoutMs(
+  envName: 'VITE_STREAM_FIRST_EVENT_TIMEOUT_MS' | 'VITE_STREAM_IDLE_TIMEOUT_MS',
+  fallback: number,
+): number {
+  const raw = import.meta.env?.[envName];
   if (typeof raw === 'string' && raw.trim()) {
     const parsed = Number(raw.trim());
     if (Number.isFinite(parsed) && parsed > 0) {
       return parsed;
     }
   }
-  return 60_000;
+  return fallback;
 }
 
 export const createStreamIdleTimeoutError = (): Error => {
@@ -32,8 +35,16 @@ export const createStreamIdleTimeoutError = (): Error => {
 };
 
 /**
- * Check a stream against the idle timeout. Returns true when the stream should
- * be considered stalled (no activity for longer than the timeout).
+ * Check a stream against the appropriate quiet-period timeout.
+ *
+ * Before any data is observed, use the first-event budget. Once at least one
+ * chunk has arrived, use the steady-state idle budget.
  */
-export const hasStreamIdleTimeoutElapsed = (lastActivityAt: number, now = Date.now()): boolean =>
-  now - lastActivityAt > STREAM_IDLE_TIMEOUT_MS;
+export const hasStreamIdleTimeoutElapsed = (
+  lastActivityAt: number,
+  hasReceivedData = true,
+  now = Date.now(),
+): boolean => {
+  const timeoutMs = hasReceivedData ? STREAM_IDLE_TIMEOUT_MS : STREAM_FIRST_EVENT_TIMEOUT_MS;
+  return now - lastActivityAt > timeoutMs;
+};

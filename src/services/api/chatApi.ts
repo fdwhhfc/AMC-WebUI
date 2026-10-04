@@ -176,8 +176,9 @@ export const sendStatelessMessageStreamApi: StreamMessageSender = async (
           return;
         }
 
-        // Watchdog: each received chunk resets the timer; an idle window longer
-        // than STREAM_IDLE_TIMEOUT_MS aborts the request. The abort goes to a
+        // Watchdog: allow a longer quiet window before the first chunk, then
+        // switch to the shorter steady-state idle budget after streaming starts.
+        // The abort goes to a
         // dedicated internal signal (also wired to the user's signal so either
         // direction cancels the fetch), which the SDK forwards into the fetch —
         // this settles a pending reader.read() that the `for await` is stuck on.
@@ -186,6 +187,7 @@ export const sendStatelessMessageStreamApi: StreamMessageSender = async (
         // a user-initiated stop in the caller's error handling.
         let timedOut = false;
         let lastActivityAt = Date.now();
+        let hasReceivedStreamChunk = false;
         const watchdogController = new AbortController();
         // User abort cancels the watchdog too, so the SDK request still dies on
         // Esc even though the loop is iterating over the internal signal. Handle
@@ -199,7 +201,7 @@ export const sendStatelessMessageStreamApi: StreamMessageSender = async (
           abortSignal.addEventListener('abort', onUserAbort, { once: true });
         }
         const idleWatchdog = setInterval(() => {
-          if (hasStreamIdleTimeoutElapsed(lastActivityAt)) {
+          if (hasStreamIdleTimeoutElapsed(lastActivityAt, hasReceivedStreamChunk)) {
             timedOut = true;
             watchdogController.abort();
           }
@@ -231,6 +233,7 @@ export const sendStatelessMessageStreamApi: StreamMessageSender = async (
               logService.warn('Streaming aborted by signal.');
               break;
             }
+            hasReceivedStreamChunk = true;
             lastActivityAt = Date.now();
             const adaptedChunk = adaptGenAiResponse(chunkResponse as GenerateContentResponse);
 

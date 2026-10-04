@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { setupTestRenderer } from '@/test/render/renderer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useChatInputFile } from './useChatInputFile';
+import { DEFAULT_APP_SETTINGS } from '@/constants/settingsDefaults';
 
 vi.mock('./useFilePreProcessingEffects', () => ({
   useFilePreProcessingEffects: () => ({
@@ -48,6 +49,12 @@ describe('useChatInputFile', () => {
       const zipInputRef = React.useRef<HTMLInputElement>(null);
       const cameraInputRef = React.useRef<HTMLInputElement>(null);
       const result = useChatInputFile({
+        appSettings: DEFAULT_APP_SETTINGS,
+        currentChatSettings: {
+          ...DEFAULT_APP_SETTINGS,
+          lockedApiKey: null,
+        },
+        setCurrentChatSettings: vi.fn(),
         fileIdInput: ' files/example ',
         isAddingById: false,
         setAddingById,

@@ -275,6 +275,7 @@ export const createChatHistoryForApi = async (
   modelId?: string,
   preferCodeExecutionFileInputs: boolean = false,
   alwaysKeepThinkingInContext: boolean = false,
+  preferInlineFileReferences: boolean = false,
 ): Promise<ChatHistoryItem[]> => {
   const historyItems: ChatHistoryItem[] = [];
 
@@ -314,6 +315,72 @@ export const createChatHistoryForApi = async (
                   } else {
                     delete partCopy.text;
                     delete partCopy.thoughtSignature;
+                  }
+                }
+
+                if (preferInlineFileReferences && partCopy.fileData?.fileUri) {
+                  const fileUri = partCopy.fileData.fileUri;
+                  const mimeType = partCopy.fileData.mimeType;
+                  const sourceFile =
+                    generatedFiles.find(
+                      (file) =>
+                        file.fileUri === fileUri ||
+                        file.fileApiName === fileUri ||
+                        (!!mimeType && file.type === mimeType),
+                    ) ?? undefined;
+
+                  const remoteReferenceExpired =
+                    sourceFile?.transferStrategy === 'remote-file-id' &&
+                    sourceFile.fileApiExpirationTime &&
+                    Date.parse(sourceFile.fileApiExpirationTime) <= Date.now();
+                  if (remoteReferenceExpired) {
+                    return {
+                      text: formatHistoryFileApiUnavailablePartText(sourceFile?.name || 'attachment'),
+                    };
+                  }
+
+                  if (sourceFile?.rawFile instanceof Blob) {
+                    try {
+                      return {
+                        inlineData: {
+                          mimeType:
+                            mimeType || sourceFile.type || sourceFile.rawFile.type || 'application/octet-stream',
+                          data: await blobToBase64(sourceFile.rawFile),
+                        },
+                        ...(partCopy.mediaResolution ? { mediaResolution: partCopy.mediaResolution } : {}),
+                      };
+                    } catch (rehydrationError) {
+                      logService.warn(`Failed to inline file reference for Vertex history: ${sourceFile.name}`, {
+                        error: rehydrationError,
+                      });
+                    }
+                  }
+
+                  const previewUrl = sourceFile?.dataUrl;
+                  if (previewUrl && (previewUrl.startsWith('blob:') || previewUrl.startsWith('data:'))) {
+                    try {
+                      const response = await fetch(previewUrl);
+                      const blob = await response.blob();
+                      return {
+                        inlineData: {
+                          mimeType: mimeType || sourceFile.type || blob.type || 'application/octet-stream',
+                          data: await blobToBase64(blob),
+                        },
+                        ...(partCopy.mediaResolution ? { mediaResolution: partCopy.mediaResolution } : {}),
+                      };
+                    } catch (rehydrationError) {
+                      logService.warn(`Failed to inline preview file for Vertex history: ${sourceFile.name}`, {
+                        error: rehydrationError,
+                      });
+                    }
+                  }
+
+                  // URLs such as YouTube/GCS are valid Vertex fileData inputs.
+                  // A Gemini Files API reference without a local backup is not.
+                  if (fileUri.startsWith('files/') || fileUri.includes('/files/')) {
+                    return {
+                      text: formatHistoryFileApiUnavailablePartText(sourceFile?.name || 'attachment'),
+                    };
                   }
                 }
 

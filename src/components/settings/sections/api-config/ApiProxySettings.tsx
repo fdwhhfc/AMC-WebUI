@@ -4,9 +4,16 @@ import { Toggle } from '@/components/shared/Toggle';
 import { SETTINGS_INPUT_CLASS } from '@/constants/formClasses';
 import { DEFAULT_MODEL_ID } from '@/constants/modelConfiguration';
 import { useI18n } from '@/contexts/I18nContext';
-import { buildGeminiRequestPreviewUrl, DEFAULT_GEMINI_API_BASE_URL } from '@/utils/api/apiProxyUrl';
+import type { GoogleApiBackend } from '@/types';
+import {
+  buildGoogleRequestPreviewUrl,
+  DEFAULT_GEMINI_API_BASE_URL,
+  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+} from '@/utils/api/apiProxyUrl';
 
 interface ApiProxySettingsProps {
+  googleApiBackend: GoogleApiBackend;
+  setGoogleApiBackend: (value: GoogleApiBackend) => void;
   useApiProxy: boolean;
   setUseApiProxy: (value: boolean) => void;
   apiProxyUrl: string | null;
@@ -14,6 +21,8 @@ interface ApiProxySettingsProps {
 }
 
 export const ApiProxySettings: React.FC<ApiProxySettingsProps> = ({
+  googleApiBackend,
+  setGoogleApiBackend,
   useApiProxy,
   setUseApiProxy,
   apiProxyUrl,
@@ -27,12 +36,42 @@ export const ApiProxySettings: React.FC<ApiProxySettingsProps> = ({
     setApiProxyUrl(null);
   };
 
-  const currentBaseUrl = apiProxyUrl?.trim() || DEFAULT_GEMINI_API_BASE_URL;
-  const previewUrl = buildGeminiRequestPreviewUrl(currentBaseUrl, DEFAULT_MODEL_ID, 'generateContent');
+  const defaultBaseUrl =
+    googleApiBackend === 'vertex-express' ? DEFAULT_VERTEX_EXPRESS_API_BASE_URL : DEFAULT_GEMINI_API_BASE_URL;
+  const currentBaseUrl = apiProxyUrl?.trim() || defaultBaseUrl;
+  const previewUrl = buildGoogleRequestPreviewUrl(
+    currentBaseUrl,
+    DEFAULT_MODEL_ID,
+    'generateContent',
+    googleApiBackend,
+  );
   const hasCustomProxy = Boolean(apiProxyUrl?.trim());
 
   return (
     <div className="space-y-3 pt-2" data-settings-item="api-proxy">
+      <div className="space-y-2 pb-1" data-settings-item="google-api-backend">
+        <label
+          htmlFor="google-api-backend-select"
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--theme-text-secondary)]"
+        >
+          Google API backend
+        </label>
+        <select
+          id="google-api-backend-select"
+          value={googleApiBackend}
+          onChange={(event) => setGoogleApiBackend(event.target.value as GoogleApiBackend)}
+          className={`${inputBaseClasses} ${SETTINGS_INPUT_CLASS}`}
+        >
+          <option value="gemini-api">Gemini Developer API</option>
+          <option value="vertex-express">Vertex AI Express</option>
+        </select>
+        <p className="text-[11px] leading-relaxed text-[var(--theme-text-secondary)]">
+          {googleApiBackend === 'vertex-express'
+            ? 'Normal model generation and chat attachments use Vertex AI Express. Dedicated transcription uploads and Live remain on the Gemini API for compatibility.'
+            : 'Normal model generation uses the Gemini Developer API.'}
+        </p>
+      </div>
+
       <div className="flex items-center justify-between py-2">
         <div className="flex items-center gap-2">
           <label

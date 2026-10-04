@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import * as apiProxyUrlModule from './apiProxyUrl';
 
-const { buildGeminiRequestPreviewUrl, DEFAULT_GEMINI_API_BASE_URL, normalizeGeminiApiBaseUrl, trimTrailingSlashes } =
-  apiProxyUrlModule;
+const {
+  buildGeminiRequestPreviewUrl,
+  buildGoogleRequestPreviewUrl,
+  DEFAULT_GEMINI_API_BASE_URL,
+  DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+  normalizeGeminiApiBaseUrl,
+  normalizeVertexExpressApiBaseUrl,
+  trimTrailingSlashes,
+} = apiProxyUrlModule;
 
 describe('apiProxyUrl', () => {
   describe('trimTrailingSlashes', () => {
@@ -32,10 +39,48 @@ describe('apiProxyUrl', () => {
     });
   });
 
+  describe('normalizeVertexExpressApiBaseUrl', () => {
+    it('accepts Cherry Studio-style publisher base URLs without duplicating the Vertex resource prefix', () => {
+      expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com/v1/publishers/google/')).toBe(
+        'https://proxy.example.com',
+      );
+      expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com/vertex/v1/publishers/google')).toBe(
+        'https://proxy.example.com/vertex',
+      );
+      expect(normalizeVertexExpressApiBaseUrl('https://proxy.example.com')).toBe('https://proxy.example.com');
+    });
+  });
+
   describe('buildGeminiRequestPreviewUrl', () => {
     it('builds standard request preview url', () => {
       const url = buildGeminiRequestPreviewUrl(DEFAULT_GEMINI_API_BASE_URL, 'gemini-2.5-flash', 'generateContent');
       expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
+    });
+  });
+
+  describe('buildGoogleRequestPreviewUrl', () => {
+    it('builds the Vertex Express publisher model path', () => {
+      const url = buildGoogleRequestPreviewUrl(
+        DEFAULT_VERTEX_EXPRESS_API_BASE_URL,
+        'gemini-2.5-flash',
+        'generateContent',
+        'vertex-express',
+      );
+      expect(url).toBe(
+        'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent',
+      );
+    });
+
+    it('does not duplicate a Cherry Studio-style Vertex publisher prefix', () => {
+      const url = buildGoogleRequestPreviewUrl(
+        'https://early-pig-57.fdwhhfc.deno.net/v1/publishers/google',
+        'gemini-2.5-flash',
+        'generateContent',
+        'vertex-express',
+      );
+      expect(url).toBe(
+        'https://early-pig-57.fdwhhfc.deno.net/v1/publishers/google/models/gemini-2.5-flash:generateContent',
+      );
     });
   });
 

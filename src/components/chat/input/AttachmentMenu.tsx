@@ -1,5 +1,5 @@
 import React from 'react';
-import { Paperclip, FolderOpen, Library, FileArchive, Layers, Film } from 'lucide-react';
+import { Paperclip, FolderOpen, Library, FileArchive, Layers, Film, HardDriveDownload } from 'lucide-react';
 import { useI18n } from '@/contexts/I18nContext';
 import { type AttachmentAction, GEMINI_PROVIDER_ID } from '@/types';
 import {
@@ -58,7 +58,14 @@ export const AttachmentMenu: React.FC = () => {
       ? [{ labelKey: 'attachMenuAddByUrl', icon: <IconYoutube size={menuIconSize} />, action: 'url' } as const]
       : []),
     ...(isGeminiNative
-      ? [{ labelKey: 'attachMenuAddById', icon: <IconCloud size={menuIconSize} />, action: 'id' } as const]
+      ? [
+          {
+            labelKey: 'attachMenuUpload',
+            icon: <HardDriveDownload size={menuIconSize} />,
+            action: 'drive',
+          } as const,
+          { labelKey: 'attachMenuAddById', icon: <IconCloud size={menuIconSize} />, action: 'id' } as const,
+        ]
       : []),
     ...(!isMobile
       ? ([
@@ -87,6 +94,7 @@ export const AttachmentMenu: React.FC = () => {
           item.action === 'library' ||
           item.action === 'multimodal_search' ||
           item.action === 'recorder' ||
+          item.action === 'drive' ||
           item.action === 'id',
       )
     : isImageGenerationModel
@@ -98,6 +106,7 @@ export const AttachmentMenu: React.FC = () => {
             item.action === 'gallery' ||
             item.action === 'camera' ||
             item.action === 'screenshot' ||
+            item.action === 'drive' ||
             item.action === 'id',
         )
       : isGemma
@@ -144,7 +153,7 @@ export const AttachmentMenu: React.FC = () => {
                 className={`${MENU_ITEM_BUTTON_CLASS} ${MENU_ITEM_DEFAULT_STATE_CLASS} w-full px-4 py-2.5 gap-3.5`}
               >
                 <span className="text-[var(--theme-text-secondary)]">{item.icon}</span>
-                <span className="font-medium">{t(item.labelKey)}</span>
+                <span className="font-medium">{item.action === 'drive' ? 'Google Drive' : t(item.labelKey)}</span>
               </button>
             </DropdownMenuItem>
           ))}

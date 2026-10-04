@@ -150,6 +150,7 @@ describe('useSettingsLogic', () => {
       ...DEFAULT_APP_SETTINGS,
       systemInstruction: 'Custom prompt',
       apiKey: 'stored-api-key',
+      vertexExpressApiKey: 'stored-vertex-key',
       useCustomApiConfig: true,
       mcpServers: [
         {
@@ -188,6 +189,7 @@ describe('useSettingsLogic', () => {
     const savedSettings = onSave.mock.calls[0][0] as AppSettings;
     expect(savedSettings.systemInstruction).toBe('');
     expect(savedSettings.apiKey).toBe('stored-api-key');
+    expect(savedSettings.vertexExpressApiKey).toBe('stored-vertex-key');
     expect(savedSettings.useCustomApiConfig).toBe(true);
     expect(savedSettings.mcpServers).toEqual(currentSettings.mcpServers);
     expect(savedSettings.thirdPartyApi.connections.find((connection) => connection.id === 'openai')?.apiKey).toBe(

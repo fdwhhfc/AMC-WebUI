@@ -16,6 +16,7 @@ import { ApiKeyInput } from './api-config/ApiKeyInput';
 import { ApiProxySettings } from './api-config/ApiProxySettings';
 import { ApiConnectionTester } from './api-config/ApiConnectionTester';
 import { ServerAccessPasswordInput } from './api-config/ServerAccessPasswordInput';
+import { GoogleDriveSettings } from './api-config/GoogleDriveSettings';
 import { useSettingsUiStore } from '@/stores/settingsUiStore';
 import { useProviderUiStore } from '@/stores/providerUiStore';
 import { getLatencyGrade } from '@/utils/third-party/thirdPartyDiagnostics';
@@ -60,6 +61,9 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
   const testMessage = isTesting ? null : (geminiTestResult?.message ?? null);
   const testLatencyMs = isTesting ? null : (geminiTestResult?.latencyMs ?? null);
   const testGrade = isTesting ? null : (geminiTestResult?.grade ?? null);
+
+  const googleApiBackend = useCustomApiConfig ? (settings.googleApiBackend ?? 'gemini-api') : 'gemini-api';
+  const activeApiKey = googleApiBackend === 'vertex-express' ? (settings.vertexExpressApiKey ?? null) : apiKey;
 
   const [allowOverflow, setAllowOverflow] = useState(useCustomApiConfig);
   const overflowTimerRef = useRef<number | null>(null);
@@ -123,7 +127,7 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
 
   const handleTestConnection = async () => {
     const resolveKeyToTest = (): string | null => {
-      if (apiKey) return apiKey;
+      if (activeApiKey) return activeApiKey;
       if (!useCustomApiConfig && hasEnvKey) {
         return viteEnv?.VITE_GEMINI_API_KEY || null;
       }
@@ -172,7 +176,8 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
 
     const startTime = performance.now();
     try {
-      const ai = await getClient(firstKey, effectiveUrl);
+      const backend = useCustomApiConfig ? googleApiBackend : 'gemini-api';
+      const ai = await getClient(firstKey, effectiveUrl, undefined, backend);
 
       await ai.models.generateContent({
         model: testModelId || DEFAULT_LIVE_ARTIFACTS_MODEL_ID,
@@ -180,7 +185,7 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
       });
 
       const latency = Math.round(performance.now() - startTime);
-      const isServerManagedAuth = !apiKey?.trim() && canUseServerManagedTestKey;
+      const isServerManagedAuth = !activeApiKey?.trim() && canUseServerManagedTestKey;
       setGeminiTestResult({
         status: 'success',
         latencyMs: latency,
@@ -208,24 +213,45 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
           setUseCustomApiConfig={handleUseCustomApiConfigChange}
           hasEnvKey={hasEnvKey}
           serverManagedApi={serverManagedApi}
-          hasCustomKey={Boolean(apiKey && apiKey.trim())}
+          hasCustomKey={Boolean(activeApiKey && activeApiKey.trim())}
         />
 
         <div
           className={`transition-all duration-300 ease-in-out ${useCustomApiConfig ? 'opacity-100 max-h-[1000px] pt-4' : 'opacity-50 max-h-0'} ${allowOverflow ? 'overflow-visible' : 'overflow-hidden'}`}
         >
           <div className="space-y-5">
-            <ApiKeyInput
-              inputId="gemini-api-key-input"
-              apiKey={apiKey}
-              serverManagedApi={serverManagedApi}
-              setApiKey={(nextApiKey) => {
-                setApiKey(nextApiKey);
-                setGeminiTestResult(null);
-              }}
-            />
+            <div className="space-y-4">
+              <ApiKeyInput
+                inputId="gemini-api-key-input"
+                label={t('settingsApiKey')}
+                apiKey={apiKey}
+                serverManagedApi={serverManagedApi}
+                setApiKey={(nextApiKey) => {
+                  setApiKey(nextApiKey);
+                  setGeminiTestResult(null);
+                }}
+              />
+
+              <ApiKeyInput
+                inputId="vertex-express-api-key-input"
+                label={t('settingsVertexExpressApiKey')}
+                apiKey={settings.vertexExpressApiKey ?? null}
+                serverManagedApi={serverManagedApi}
+                setApiKey={(nextApiKey) => {
+                  onUpdate('vertexExpressApiKey', nextApiKey);
+                  setGeminiTestResult(null);
+                }}
+                placeholder={t('apiConfigVertexExpressKeyPlaceholder')}
+                helpText={t('settingsVertexExpressApiKeyHelpText')}
+              />
+            </div>
 
             <ApiProxySettings
+              googleApiBackend={settings.googleApiBackend ?? 'gemini-api'}
+              setGoogleApiBackend={(nextBackend) => {
+                onUpdate('googleApiBackend', nextBackend);
+                setGeminiTestResult(null);
+              }}
               useApiProxy={useApiProxy}
               setUseApiProxy={(nextUseApiProxy) => {
                 setUseApiProxy(nextUseApiProxy);
@@ -337,7 +363,7 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
               latencyMs={testLatencyMs}
               latencyGrade={testGrade}
               isTestDisabled={
-                testStatus === 'testing' || (!apiKey && useCustomApiConfig && !canUseServerManagedTestKey)
+                testStatus === 'testing' || (!activeApiKey && useCustomApiConfig && !canUseServerManagedTestKey)
               }
               availableModels={CONNECTION_TEST_MODELS}
               testModelId={testModelId}
@@ -346,6 +372,8 @@ export const ApiConfigSection: React.FC<ApiConfigSectionProps> = ({
           </div>
         </div>
       </div>
+
+      <GoogleDriveSettings settings={settings} onUpdate={onUpdate} />
 
       <div
         className="rounded-xl border border-[var(--theme-border-secondary)] bg-[var(--theme-bg-surface-secondary)]/50 p-4 transition-all duration-200"
